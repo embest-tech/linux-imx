@@ -777,11 +777,11 @@ static struct gpio mx6q_sabrelite_flexcan_gpios[] = {
 static void mx6q_sabrelite_flexcan0_switch(int enable)
 {
 	if (enable) {
-		gpio_set_value(MX6Q_SABRELITE_CAN1_EN, 1);
-		gpio_set_value(MX6Q_SABRELITE_CAN1_STBY, 1);
-	} else {
 		gpio_set_value(MX6Q_SABRELITE_CAN1_EN, 0);
 		gpio_set_value(MX6Q_SABRELITE_CAN1_STBY, 0);
+	} else {
+		gpio_set_value(MX6Q_SABRELITE_CAN1_EN, 1);
+		gpio_set_value(MX6Q_SABRELITE_CAN1_STBY, 1);
 	}
 }
 
