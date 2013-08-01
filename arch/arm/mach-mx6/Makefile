@@ -12,6 +12,7 @@ obj-$(CONFIG_MACH_MX6Q_ARM2) += board-mx6q_arm2.o
 obj-$(CONFIG_MACH_MX6Q_SABRELITE) += board-mx6q_sabrelite.o
 obj-$(CONFIG_MACH_MX6Q_SABRESD) += board-mx6q_sabresd.o mx6q_sabresd_pmic_pfuze100.o
 obj-$(CONFIG_MACH_MX6Q_SABREAUTO) += board-mx6q_sabreauto.o mx6q_sabreauto_pmic_pfuze100.o
+obj-$(CONFIG_MACH_MX6Q_MARSBOARD) += board-mx6q_marsboard.o
 obj-$(CONFIG_SMP) += plat_hotplug.o platsmp.o headsmp.o
 obj-$(CONFIG_LOCAL_TIMERS) += localtimer.o
 obj-$(CONFIG_IMX_PCIE) += pcie.o

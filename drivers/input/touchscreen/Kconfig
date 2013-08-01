@@ -767,4 +767,6 @@ config TOUCHSCREEN_MAX11801
 
         To compile this driver as a module, choose M here: the
 	  module will be called max11801_ts
+
+source "drivers/input/touchscreen/generic_ts_rel/Kconfig"
 endif
