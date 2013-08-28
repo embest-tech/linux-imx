@@ -407,7 +407,9 @@ static int mxcfb_set_par(struct fb_info *fbi)
 			sig_cfg.Hsync_pol = true;
 		if (fbi->var.sync & FB_SYNC_VERT_HIGH_ACT)
 			sig_cfg.Vsync_pol = true;
-		if (!(fbi->var.sync & FB_SYNC_CLK_LAT_FALL))
+		if (!strcmp(mxc_fbi->dispdrv->drv->name, "lcd"))  //embest
+			sig_cfg.clk_pol = false;
+		else if (!(fbi->var.sync & FB_SYNC_CLK_LAT_FALL)) 
 			sig_cfg.clk_pol = true;
 		if (fbi->var.sync & FB_SYNC_DATA_INVERT)
 			sig_cfg.data_pol = true;
