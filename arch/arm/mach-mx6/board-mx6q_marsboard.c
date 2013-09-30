@@ -124,7 +124,6 @@ static iomux_v3_cfg_t mx6q_marsboard_pads[] = {
 	MX6Q_PAD_KEY_COL2__CAN1_TXCAN,
 	MX6Q_PAD_GPIO_2__GPIO_1_2,		/* STNDBY */
 	MX6Q_PAD_GPIO_7__GPIO_1_7,		/* NERR */
-	MX6Q_PAD_GPIO_4__GPIO_1_4,		/* Enable */
 
 	/* CCM  */
 	MX6Q_PAD_GPIO_0__CCM_CLKO,		/* SGTL500 sys_mclk */
@@ -134,7 +133,7 @@ static iomux_v3_cfg_t mx6q_marsboard_pads[] = {
 	MX6Q_PAD_EIM_D17__ECSPI1_MISO,
 	MX6Q_PAD_EIM_D18__ECSPI1_MOSI,
 	MX6Q_PAD_EIM_D16__ECSPI1_SCLK,
-	MX6Q_PAD_EIM_D19__GPIO_3_19,	/*SS1*/
+//	MX6Q_PAD_EIM_D19__GPIO_3_19,	/*SS1*/
 
         /* ECSPI2 */
         MX6Q_PAD_EIM_OE__ECSPI2_MISO,
@@ -282,12 +281,20 @@ static iomux_v3_cfg_t mx6q_marsboard_pads[] = {
 	MX6Q_PAD_SD4_DAT2__PWM4_PWMO,
 
 	/* UART1  */
-	MX6Q_PAD_SD3_DAT7__UART1_TXD,
-	MX6Q_PAD_SD3_DAT6__UART1_RXD,
+//	MX6Q_PAD_SD3_DAT7__UART1_TXD,
+//	MX6Q_PAD_SD3_DAT6__UART1_RXD,
+	MX6Q_PAD_CSI0_DAT10__UART1_TXD,
+	MX6Q_PAD_CSI0_DAT11__UART1_RXD,		
+	MX6Q_PAD_EIM_D19__UART1_CTS,
+	MX6Q_PAD_EIM_D20__UART1_RTS,	
 
 	/* UART2 for debug */
 	MX6Q_PAD_EIM_D26__UART2_TXD,
 	MX6Q_PAD_EIM_D27__UART2_RXD,
+
+	/* UART4 */
+	MX6Q_PAD_KEY_COL0__UART4_TXD,
+	MX6Q_PAD_KEY_ROW0__UART4_RXD,		
 
 	/* USBOTG ID pin */
 //	MX6Q_PAD_GPIO_1__USBOTG_ID,
@@ -458,6 +465,8 @@ static inline void mx6q_marsboard_init_uart(void)
 {
 	imx6q_add_imx_uart(0, NULL);
 	imx6q_add_imx_uart(1, NULL);
+	imx6q_add_imx_uart(2, NULL);
+	imx6q_add_imx_uart(3, NULL);
 }
 
 static int mx6q_marsboard_fec_phy_init(struct phy_device *phydev)
@@ -690,10 +699,12 @@ static struct i2c_board_info mxc_i2c1_board_info[] __initdata = {
 	{
 		I2C_BOARD_INFO("mxc_hdmi_i2c", 0x50),
 	},
+#if 0
 	{
 		I2C_BOARD_INFO("ov5642", 0x3c),
 		.platform_data = (void *)&camera_data,
 	},
+#endif
 };
 
 static struct i2c_board_info mxc_i2c2_board_info[] __initdata = {
