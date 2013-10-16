@@ -789,4 +789,7 @@ config TOUCHSCREEN_DA9052
         help
           Say y here to support the touchscreen found on
           Dialog Semiconductor DA9052 PMIC
+
+source "drivers/input/touchscreen/generic_ts_rel/Kconfig"
+
 endif

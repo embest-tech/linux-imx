@@ -2128,6 +2128,16 @@ static struct clk i2c_clk[] = {
 	 .enable = _clk_enable,
 	 .disable = _clk_disable,
 	 },
+	{
+        __INIT_CLK_DEBUG(i2c_clk_3)
+         .id = 3,
+         .parent = &ipg_perclk,
+         .enable_reg = MXC_CCM_CCGR1,
+         .enable_shift = MXC_CCM_CCGRx_CG4_OFFSET,
+         .enable = _clk_enable,
+         .disable = _clk_disable,
+         },
+
 };
 
 static int _clk_vpu_axi_set_parent(struct clk *clk, struct clk *parent)
@@ -5248,6 +5258,7 @@ static struct clk_lookup lookups[] = {
 	_REGISTER_CLOCK(NULL, "i2c_clk", i2c_clk[0]),
 	_REGISTER_CLOCK("imx-i2c.1", NULL, i2c_clk[1]),
 	_REGISTER_CLOCK("imx-i2c.2", NULL, i2c_clk[2]),
+	_REGISTER_CLOCK("imx-i2c.3", NULL, i2c_clk[3]),
 	_REGISTER_CLOCK(NULL, "vpu_clk", vpu_clk[0]),
 	_REGISTER_CLOCK(NULL, "ipu1_clk", ipu1_clk),
 	_REGISTER_CLOCK(NULL, "ipu2_clk", ipu2_clk),
