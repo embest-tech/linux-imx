@@ -176,8 +176,7 @@ static iomux_v3_cfg_t mx6dl_riot_pads[] = {
 
 	/* CCM - Audio, Camera clock  */
 	MX6DL_PAD_GPIO_0__CCM_CLKO,
-//	MX6DL_PAD_GPIO_3__CCM_CLKO2,
-	MX6DL_PAD_NANDF_CS2__CCM_CLKO2,
+	MX6DL_PAD_GPIO_3__CCM_CLKO2,
 
 	/* MICROPHONE_DET */
 	MX6DL_PAD_GPIO_9__GPIO_1_9,
@@ -212,7 +211,7 @@ static iomux_v3_cfg_t mx6dl_riot_pads[] = {
 	/* DISP_PWR_EN */
 //	MX6DL_PAD_NANDF_CS1__GPIO_6_14,
 	/* CABC_EN0 */
-//	MX6DL_PAD_NANDF_CS2__GPIO_6_15,
+	MX6DL_PAD_NANDF_CS2__GPIO_6_15,
 	/* CABC_EN1 */
 	MX6DL_PAD_NANDF_CS3__GPIO_6_16,
 	/* DISP0_WR */

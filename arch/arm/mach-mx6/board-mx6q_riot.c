@@ -129,7 +129,7 @@
 #define RIOT_CAP_TCH_INT1	IMX_GPIO_NR(6, 7)
 #define RIOT_CAP_TCH_INT0	IMX_GPIO_NR(6, 8)
 #define RIOT_DISP_RST_B	IMX_GPIO_NR(6, 11)
-#define RIOT_CABC_EN0	IMX_GPIO_NR(6, 15)
+#define RIOT_LED_PWN          IMX_GPIO_NR(6, 15)
 #define RIOT_CABC_EN1	IMX_GPIO_NR(6, 16)
 #define RIOT_AUX_3V15_EN	IMX_GPIO_NR(6, 9)
 #define RIOT_DISP0_WR_REVB	IMX_GPIO_NR(6, 9)
@@ -685,6 +685,22 @@ static struct fsl_mxc_lcd_platform_data lcdif_data = {
 	.default_ifmt = IPU_PIX_FMT_RGB565,
 };
 
+static void ldb_init(void)
+{
+        int ret;
+
+        printk("----ldb_init\n");
+
+        ret = gpio_request(RIOT_LED_PWN, "led_pwn");
+        if (ret) {
+                pr_err("failed to get GPIO RIOT_LED_PWN: %d\n",
+                        ret);
+                return;
+        }
+
+        gpio_direction_output(RIOT_LED_PWN, 1);
+}
+
 static struct fsl_mxc_ldb_platform_data ldb_data = {
 	.ipu_id = 0,
 	.disp_id = 0,
@@ -1095,6 +1111,8 @@ static void __init mx6_riot_board_init(void)
 		imx6q_add_imx_caam();
 
 	imx6q_add_device_gpio_leds();
+
+	ldb_init();
 
 	imx6q_add_imx_i2c(0, &mx6q_riot_i2c0_data);
 	imx6q_add_imx_i2c(1, &mx6q_riot_i2c1_data);
