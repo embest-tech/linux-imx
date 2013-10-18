@@ -204,8 +204,6 @@ static iomux_v3_cfg_t mx6dl_riot_pads[] = {
 	MX6DL_PAD_SD1_CMD__PWM4_PWMO,
 	/* DISP0 power enable */
 	MX6DL_PAD_ENET_TXD0__GPIO_1_30,
-	/* DISP0_RD */
-	MX6DL_PAD_EIM_D28__GPIO_3_28,
 	/* DISP_RST_B */
 	MX6DL_PAD_NANDF_CS0__GPIO_6_11,
 	/* DISP_PWR_EN */
@@ -246,8 +244,10 @@ static iomux_v3_cfg_t mx6dl_riot_pads[] = {
 	/* PMIC_INT_B */
 	MX6DL_PAD_GPIO_18__GPIO_7_13,
 
-	/* Charge */
-	MX6DL_PAD_EIM_A25__GPIO_5_2,  /* FLT_1_B */
+	/* LED */
+	MX6DL_PAD_EIM_A25__GPIO_5_2,
+	MX6DL_PAD_EIM_D28__GPIO_3_28,
+
 	MX6DL_PAD_EIM_D23__GPIO_3_23, /* CHG_1_B */
 	MX6DL_PAD_EIM_DA13__GPIO_3_13, /* CHG_2_B  */
 	MX6DL_PAD_EIM_DA14__GPIO_3_14, /* FLT_2_B */

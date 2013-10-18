@@ -113,7 +113,6 @@
 #define RIOT_USB_OTG_PWR	IMX_GPIO_NR(3, 22)
 #define RIOT_CHARGE_CHG_1_B	IMX_GPIO_NR(3, 23)
 #define RIOT_TS_INT		IMX_GPIO_NR(3, 26)
-#define RIOT_DISP0_RD	IMX_GPIO_NR(3, 28)
 #define RIOT_POWER_OFF	IMX_GPIO_NR(3, 29)
 
 #define RIOT_CAN1_STBY	IMX_GPIO_NR(4, 5)
@@ -173,7 +172,6 @@
 #define RIOT_EPDC_PWRCTRL0	IMX_GPIO_NR(2, 20)
 #define RIOT_EPDC_PWRCTRL1	IMX_GPIO_NR(2, 19)
 #define RIOT_EPDC_PWRCTRL2	IMX_GPIO_NR(2, 18)
-#define RIOT_EPDC_PWRCTRL3	IMX_GPIO_NR(3, 28)
 #define RIOT_EPDC_BDR0	IMX_GPIO_NR(3, 2)
 #define RIOT_EPDC_BDR1	IMX_GPIO_NR(3, 3)
 #define RIOT_EPDC_SDCE0	IMX_GPIO_NR(3, 4)
@@ -181,11 +179,10 @@
 #define RIOT_EPDC_SDCE2	IMX_GPIO_NR(3, 6)
 #define RIOT_EPDC_SDCE3	IMX_GPIO_NR(3, 7)
 #define RIOT_EPDC_SDCE4	IMX_GPIO_NR(3, 8)
-//#define RIOT_EPDC_PMIC_WAKE	IMX_GPIO_NR(3, 20)
 #define RIOT_EPDC_PMIC_INT	IMX_GPIO_NR(2, 25)
 #define RIOT_EPDC_VCOM	IMX_GPIO_NR(3, 17)
-//#define RIOT_CHARGE_NOW	IMX_GPIO_NR(1, 2)
-#define RIOT_CHARGE_DONE	IMX_GPIO_NR(1, 1)
+#define RIOT_SYS_LED		IMX_GPIO_NR(3, 28)
+#define RIOT_USER_LED		IMX_GPIO_NR(5, 2)
 
 #ifdef CONFIG_MX6_ENET_IRQ_TO_GPIO
 #define MX6_ENET_IRQ		IMX_GPIO_NR(1, 6)
@@ -903,30 +900,18 @@ static void pcie_3v3_reset(void)
 #endif
 
 #if defined(CONFIG_LEDS_TRIGGER) || defined(CONFIG_LEDS_GPIO)
-
-#define GPIO_LED(gpio_led, name_led, act_low, state_suspend, trigger)	\
-{									\
-	.gpio			= gpio_led,				\
-	.name			= name_led,				\
-	.active_low		= act_low,				\
-	.retain_state_suspended = state_suspend,			\
-	.default_state		= 0,					\
-	.default_trigger	= "max8903-"trigger,		\
-}
-
-/* use to show a external power source is connected
- * GPIO_LED(RIOT_CHARGE_DONE, "chg_detect", 0, 1, "ac-online"),
- */
 static struct gpio_led imx6q_gpio_leds[] = {
-//	GPIO_LED(RIOT_CHARGE_NOW, "chg_now_led", 0, 1,
-//		"charger-charging"),
-/* For the latest B4 board, this GPIO_1 is connected to POR_B,
-which will reset the whole board if this pin's level is changed,
-so, for the latest board, we have to avoid using this pin as
-GPIO.
-	GPIO_LED(RIOT_CHARGE_DONE, "chg_done_led", 0, 1,
-			"charger-full"),
-*/
+        {
+                .name                   = "sys_led",
+                .default_trigger        = "heartbeat",
+                .gpio                   = RIOT_SYS_LED,
+                .active_low             = true,
+        },
+        {
+                .name                   = "user_led",
+                .gpio                   = RIOT_USER_LED,
+                .active_low             = true,
+        },
 };
 
 static struct gpio_led_platform_data imx6q_gpio_leds_data = {
@@ -1180,7 +1165,7 @@ static void __init mx6_riot_board_init(void)
 	imx6q_add_dma();
 
 	imx6q_add_dvfs_core(&riot_dvfscore_data);
-	imx6q_add_device_buttons();
+//	imx6q_add_device_buttons();
 
 	imx6q_add_hdmi_soc();
 	imx6q_add_hdmi_soc_dai();
