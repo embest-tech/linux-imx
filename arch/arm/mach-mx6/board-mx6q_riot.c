@@ -122,7 +122,6 @@
 #define RIOT_PCIE_DIS_B	IMX_GPIO_NR(4, 14)
 
 #define RIOT_DI0_D0_CS	IMX_GPIO_NR(5, 0)
-#define RIOT_CHARGE_FLT_1_B	IMX_GPIO_NR(5, 2)
 #define RIOT_PCIE_WAKE_B	IMX_GPIO_NR(5, 20)
 
 #define RIOT_CAP_TCH_INT1	IMX_GPIO_NR(6, 7)
@@ -155,7 +154,6 @@
 //#define RIOT_EPDC_SDDO_12	IMX_GPIO_NR(3, 19)
 #define RIOT_EPDC_SDDO_13	IMX_GPIO_NR(3, 13)
 #define RIOT_EPDC_SDDO_14	IMX_GPIO_NR(3, 14)
-#define RIOT_EPDC_SDDO_15	IMX_GPIO_NR(5, 2)
 #define RIOT_EPDC_GDCLK	IMX_GPIO_NR(2, 17)
 #define RIOT_EPDC_GDSP	IMX_GPIO_NR(2, 16)
 #define RIOT_EPDC_GDOE	IMX_GPIO_NR(6, 6)
@@ -594,34 +592,19 @@ static struct mipi_dsi_platform_data mipi_dsi_pdata = {
 };
 
 static struct ipuv3_fb_platform_data riot_fb_data[] = {
-	{ /*fb0*/
-	.disp_dev = "ldb",
-	.interface_pix_fmt = IPU_PIX_FMT_RGB666,
-	.mode_str = "LDB-XGA",
-	.default_bpp = 16,
-	.int_clk = false,
-	.late_init = false,
-	}, {
-	.disp_dev = "ldb",
-	.interface_pix_fmt = IPU_PIX_FMT_RGB666,
-	.mode_str = "LDB-XGA",
-	.default_bpp = 16,
-	.int_clk = false,
-	}, {
-	.disp_dev = "lcd",
-	.interface_pix_fmt = IPU_PIX_FMT_RGB565,
-	.mode_str = "CLAA-WVGA",
-	.default_bpp = 16,
-	.int_clk = false,
-	.late_init = false,
-	}, {
-	.disp_dev = "ldb",
-	.interface_pix_fmt = IPU_PIX_FMT_RGB666,
-	.mode_str = "LDB-VGA",
-	.default_bpp = 16,
-	.int_clk = false,
-	.late_init = false,
-	},
+        { /* fb0 */
+        .disp_dev = "ldb",
+        .interface_pix_fmt = IPU_PIX_FMT_RGB666,
+        .mode_str = "LDB-XGA",
+        .default_bpp = 32,
+        .int_clk = false,
+        }, {
+        .disp_dev = "hdmi",
+        .interface_pix_fmt = IPU_PIX_FMT_RGB24,
+        .mode_str = "1280x720M@60",
+        .default_bpp = 32,
+        .int_clk = false,
+        },
 };
 
 static void hdmi_init(int ipu_id, int disp_id)
