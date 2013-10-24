@@ -101,6 +101,12 @@ void touch_report_pts(struct struct_touch_var *touch)
                 PRINT_TOUCH_MSG("X:     %d\n", touch->pts[iter].x);
                 PRINT_TOUCH_MSG("Y:     %d\n", touch->pts[iter].y);
 
+#ifdef CONFIG_TOUCHSCREEN_GENERIC_TS_SINGLE_TOUCH
+                input_report_abs(touch->input, ABS_X, touch->pts[iter].x);
+                input_report_abs(touch->input, ABS_Y, touch->pts[iter].y);
+                input_event(touch->input, EV_KEY, BTN_TOUCH, 1);
+                input_report_abs(touch->input, ABS_PRESSURE, 1);		
+#else
 	#if 1	// android 4.x
 		input_mt_slot(touch->input, touch->pts[iter].id);
 		input_mt_report_slot_state(touch->input, MT_TOOL_FINGER, true);
@@ -117,7 +123,7 @@ void touch_report_pts(struct struct_touch_var *touch)
 			
 		input_mt_sync(ts->input);
 	#endif
-	
+#endif	
 		touch->sync = 1;
 		touch->press |= (0x01 << touch->pts[iter].id);
 	}
@@ -127,6 +133,10 @@ void touch_report_pts(struct struct_touch_var *touch)
 	touch->release &= touch->release ^ touch->press;
 	for ( iter = 0; iter < touch->valid_max_pts_num; iter++ ) {
 		if ( touch->release & (0x01<<iter) ) {
+#ifdef CONFIG_TOUCHSCREEN_GENERIC_TS_SINGLE_TOUCH
+                input_event(touch->input, EV_KEY, BTN_TOUCH, 0);
+                input_report_abs(touch->input, ABS_PRESSURE, 0);
+#else
 	#if 1	// android 4.x
 			input_mt_slot(touch->input, iter);
 			input_mt_report_slot_state(touch->input, MT_TOOL_FINGER, false);
@@ -139,6 +149,7 @@ void touch_report_pts(struct struct_touch_var *touch)
 	
 			input_mt_sync(core_data->input);
 	#endif
+#endif
 			touch->sync = 1;
 		}
 	}
@@ -184,7 +195,13 @@ struct struct_touch_var* touch_var_init(struct struct_touch_param *param)
 		//__set_bit(EV_SYN, touch->input->evbit);
 		__set_bit(EV_KEY, touch->input->evbit);
 		__set_bit(EV_ABS, touch->input->evbit);
-		
+
+#ifdef CONFIG_TOUCHSCREEN_GENERIC_TS_SINGLE_TOUCH
+        	__set_bit(BTN_TOUCH, touch->input->keybit);
+        	input_set_abs_params(touch->input, ABS_X, 0, 1024, 0, 0);
+        	input_set_abs_params(touch->input, ABS_Y, 0, 768, 0, 0);
+        	input_set_abs_params(touch->input, ABS_PRESSURE, 0, 1, 0, 0);		
+#else		
 		// For android 4.x only
 		__set_bit(INPUT_PROP_DIRECT, touch->input->propbit);
 		
@@ -194,7 +211,7 @@ struct struct_touch_var* touch_var_init(struct struct_touch_param *param)
 		input_set_abs_params(touch->input, ABS_MT_POSITION_Y, 0, param->y_max, 0, 0);
 		input_set_abs_params(touch->input, ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0);
 		input_set_abs_params(touch->input, ABS_MT_WIDTH_MAJOR, 0, 255, 0, 0);
-		
+#endif		
 		touch->input->name = DRIVER_NAME;
 		touch->input->id.bustype = BUS_I2C;
 		

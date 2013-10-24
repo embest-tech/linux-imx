@@ -548,9 +548,9 @@ static struct mtd_partition imx6_marsboard_spi_nor_partitions[] = {
 	 .size = 0x00040000,
 	},
 	{
-	 .name = "kernel",
-	 .offset = MTDPART_OFS_APPEND,
-	 .size = MTDPART_SIZ_FULL,
+	 .name = "params",
+	 .offset = 0x000c0000,
+	 .size = 0x2000,
 	},
 };
 
@@ -1270,8 +1270,11 @@ static void __init mx6_marsboard_board_init(void)
 	imx6q_add_anatop_thermal_imx(1, &mx6q_marsboard_anatop_thermal_data);
 	imx6_init_fec(fec_data);
 	imx6q_add_pm_imx(0, &mx6q_marsboard_pm_data);
-	imx6q_add_sdhci_usdhc_imx(1, &mx6q_marsboard_sd2_data);
+        /* Move sd3 to first because sd3 connect to emmc.
+           Mfgtools want emmc is mmcblk0 and other sd card is mmcblk1.
+        */	
 	imx6q_add_sdhci_usdhc_imx(2, &mx6q_marsboard_sd3_data);
+	imx6q_add_sdhci_usdhc_imx(1, &mx6q_marsboard_sd2_data);
 	imx_add_viv_gpu(&imx6_gpu_data, &imx6q_gpu_pdata);
 	imx6q_marsboard_init_usb();
 	imx6q_add_ahci(0, &mx6q_marsboard_sata_data);

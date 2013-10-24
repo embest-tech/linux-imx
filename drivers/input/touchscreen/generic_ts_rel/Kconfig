@@ -65,6 +65,14 @@ config TOUCHSCREEN_GENERIC_TS_MISC
 		default n
 		depends on TOUCHSCREEN_GENERIC_TS_MISC
 
+config TOUCHSCREEN_GENERIC_TS_SINGLE_TOUCH
+        bool "generic touchscreen as single-touch"
+        default N
+        depends on TOUCHSCREEN_GENERIC_TS
+        help
+          If you say yes here you get single-touch touchscreen support.
+          If you say "no", you'll get the normal multi-touch.
+
 config TOUCHSCREEN_GENERIC_TS_ENHANCE
 	bool "Device driver enhancement support"
 	default n
