@@ -105,6 +105,9 @@ const struct imx_imx_i2c_data imx6q_imx_i2c_data[] __initconst = {
 	imx6q_imx_i2c_data_entry(0, 1),
 	imx6q_imx_i2c_data_entry(1, 2),
 	imx6q_imx_i2c_data_entry(2, 3),
+#define imx6dl_imx_i2c_data_entry(_id, _hwid)                            \
+        imx_imx_i2c_data_entry(MX6DL, _id, _hwid, SZ_4K)
+  	imx6dl_imx_i2c_data_entry(3, 4),  //embest
 };
 #endif /* ifdef CONFIG_SOC_IMX6Q */
 
