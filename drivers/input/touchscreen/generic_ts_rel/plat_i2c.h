@@ -42,7 +42,7 @@
 #define PLATFORM_AW_IRQ_PIN_STR		"ctp_int_port"
 
 // CONFIG_ARCH_SUN4I
-#define PLATFORM_AW_CTP_IRQ_NUM			(21)	// EINT_21
+// #define PLATFORM_AW_CTP_IRQ_NUM			(21)	// EINT_21
 // CONFIG_ARCH_SUN5I
 #define PLATFORM_AW_CTP_IRQ_NUM			(9)	// EINT_9
 

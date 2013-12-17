@@ -32,7 +32,7 @@ enum enum_core_drv_state {
 // ****************************************************************************
 struct struct_core_i2c_var;
 struct struct_core_i2c_ops {
-	struct struct_platform_var* (*platform_var_init)(void);
+	struct struct_platform_var* (*platform_var_init)(struct struct_platform_param *param);
 	void (*platform_var_exit)(struct struct_platform_var *pdata);
 
 	struct struct_chip_var* (*chip_var_init)(struct struct_chip_param *param);

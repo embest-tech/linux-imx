@@ -83,31 +83,31 @@ struct i2c_driver generic_ts_driver  = {
 static 
 struct struct_core_i2c_var* core_var_init(void)
 {
-	struct struct_core_i2c_var* core_data = NULL;
+	struct struct_core_i2c_var* local_core_data = NULL;
 
 	PRINT_CORE_MSG("%s: >>>>>>>>>>>>>>>>>>>\n", __FUNCTION__);
 
-	core_data = kzalloc(sizeof(struct struct_core_i2c_var), GFP_KERNEL);
-	if ( core_data ) {
-		core_data->ops.platform_var_init = platform_var_init;
-		core_data->ops.platform_var_exit = platform_var_exit;
+	local_core_data = kzalloc(sizeof(struct struct_core_i2c_var), GFP_KERNEL);
+	if ( local_core_data ) {
+		local_core_data->ops.platform_var_init = platform_var_init;
+		local_core_data->ops.platform_var_exit = platform_var_exit;
 
-		core_data->ops.chip_var_init = chip_var_init;
-		core_data->ops.chip_var_exit = chip_var_exit;
+		local_core_data->ops.chip_var_init = chip_var_init;
+		local_core_data->ops.chip_var_exit = chip_var_exit;
 
-		core_data->ops.touch_var_init = touch_var_init;
-		core_data->ops.touch_var_exit = touch_var_exit;
+		local_core_data->ops.touch_var_init = touch_var_init;
+		local_core_data->ops.touch_var_exit = touch_var_exit;
 
-		core_data->ops.fsutils_var_init = fsutils_var_init;
-		core_data->ops.fsutils_var_exit = fsutils_var_exit;
+		local_core_data->ops.fsutils_var_init = fsutils_var_init;
+		local_core_data->ops.fsutils_var_exit = fsutils_var_exit;
 
 	#ifdef CONFIG_TOUCHSCREEN_GENERIC_TS_ENHANCE
-		core_data->ops.enhance_var_init = enhance_var_init;
-		core_data->ops.enhance_var_exit = enhance_var_exit;
+		local_core_data->ops.enhance_var_init = enhance_var_init;
+		local_core_data->ops.enhance_var_exit = enhance_var_exit;
 	#endif
 	}
 
-	return core_data;
+	return local_core_data;
 }
 
 static 
@@ -382,7 +382,7 @@ int core_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		#error No Chip Parameter defined
 	#endif
 		core_data->cdata = core_data->ops.chip_var_init(&param);
-		
+
 		/* Get chip id */
 		if ( core_data->cdata->ops.get_vendor ) {
 			vendor = core_data->cdata->ops.get_vendor(client, core_data->cdata->pts_data);
@@ -634,6 +634,10 @@ static
 void core_shutdown(struct i2c_client *client)
 {
 	struct struct_core_i2c_var *core_data = i2c_get_clientdata(client);
+
+        if ( core_data == NULL)
+                return ;
+
 	char *buf = (char*)core_data->cdata->pts_data;
 
 	PRINT_CORE_MSG("%s: >>>>>>>>>>>>>>>>>>>\n", __FUNCTION__);
@@ -718,6 +722,9 @@ int __devexit core_remove(struct i2c_client *client)
 
 	PRINT_CORE_MSG("%s: >>>>>>>>>>>>>>>>>>>\n", __FUNCTION__);
 
+        if ( core_data == NULL)
+                return -1;
+
 	free_irq(core_data->pdata->i2c->irq, core_data);
 	cancel_work_sync(&core_data->event_work);
 	destroy_workqueue(core_data->workqueue);
@@ -745,7 +752,9 @@ int __init core_init(void)
 	core_data->state = CORE_STATE_UNKNOWN;
 
 	if ( core_data->ops.platform_var_init ) {
-		core_data->pdata = core_data->ops.platform_var_init();
+                struct struct_platform_param param;
+                param.bustype = PLATFORM_BUS_I2C;
+		core_data->pdata = core_data->ops.platform_var_init(&param);
 	}
 
 	if ( core_data->pdata->i2c->ops.get_cfg ) {

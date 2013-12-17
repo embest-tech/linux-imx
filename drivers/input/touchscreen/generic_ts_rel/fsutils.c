@@ -339,8 +339,6 @@ ssize_t fsutils_write(struct file *file, const char __user *buffer, size_t count
 static
 ssize_t fsutils_read(struct file *file, char __user *buf, size_t count, loff_t *offset)
 {
-	int err = -1;
-
 	PRINT_FSUTILS_MSG(">>>>> %s() called <<<<< \n", __FUNCTION__);
 
 	if ( core_data->state == CORE_STATE_NORMAL ) {
