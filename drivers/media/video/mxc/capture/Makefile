@@ -50,6 +50,9 @@ obj-$(CONFIG_MXC_CAMERA_OV5640_MIPI) += ov5640_camera_mipi.o
 ov8820_camera_mipi-objs := ov8820_mipi.o
 obj-$(CONFIG_MXC_CAMERA_OV8820_MIPI) += ov8820_camera_mipi.o
 
+ov2656_camera-objs := ov2656.o
+obj-$(CONFIG_MXC_CAMERA_OV2656) += ov2656_camera.o
+
 adv7180_tvin-objs := adv7180.o
 obj-$(CONFIG_MXC_TVIN_ADV7180) += adv7180_tvin.o
 
