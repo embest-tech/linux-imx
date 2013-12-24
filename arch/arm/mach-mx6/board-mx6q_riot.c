@@ -1205,8 +1205,8 @@ static void __init mx6_riot_board_init(void)
 	   Mfgtools want emmc is mmcblk0 and other sd card is mmcblk1.
 	*/
 	imx6q_add_sdhci_usdhc_imx(3, &mx6q_riot_sd4_data);
-	imx6q_add_sdhci_usdhc_imx(2, &mx6q_riot_sd3_data);
 	imx6q_add_sdhci_usdhc_imx(1, &mx6q_riot_sd2_data);
+	imx6q_add_sdhci_usdhc_imx(2, &mx6q_riot_sd3_data);
 	imx_add_viv_gpu(&imx6_gpu_data, &imx6q_gpu_pdata);
 	imx6q_riot_init_usb();
 
