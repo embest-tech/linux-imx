@@ -64,6 +64,11 @@
 #define PLATFORM_SABRELITE_RST_PIN                    IMX_GPIO_NR(2, 0)
 #define PLATFORM_SABRELITE_IRQ_PIN                    IMX_GPIO_NR(1, 9)
 
+/* marsboard config */
+#define PLATFORM_MARSBOARD_PWR_PIN                    0//
+#define PLATFORM_MARSBOARD_RST_PIN                    IMX_GPIO_NR(1, 29)
+#define PLATFORM_MARSBOARD_IRQ_PIN                    IMX_GPIO_NR(6, 14)
+
 /* riot board config */
 #define PLATFORM_RIOT_PWR_PIN                    0//
 #define PLATFORM_RIOT_RST_PIN                    IMX_GPIO_NR(1, 29)
