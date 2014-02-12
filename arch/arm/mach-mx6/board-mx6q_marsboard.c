@@ -966,7 +966,7 @@ static struct fsl_mxc_hdmi_core_platform_data hdmi_core_data = {
 static struct fsl_mxc_lcd_platform_data lcdif_data = {
 	.ipu_id = 0,
 	.disp_id = 0,
-	.default_ifmt = IPU_PIX_FMT_RGB565,
+	.default_ifmt = IPU_PIX_FMT_RGB24,
 };
 
 static void ldb_init(void)
