@@ -39,6 +39,7 @@ static struct fb_videomode lcdif_modedb[] = {
 	FB_SYNC_CLK_LAT_FALL,
 	FB_VMODE_NONINTERLACED,
 	0,},
+	{
         /* 4.3inch_LCD */
         "4.3inch_LCD", 60, 480, 272, KHZ2PICOS(9600), 2, 2, 2, 2, 41, 10,
         FB_SYNC_CLK_LAT_FALL,
