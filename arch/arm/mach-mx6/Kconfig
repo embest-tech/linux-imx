@@ -247,8 +247,8 @@ config MACH_MX6Q_MARSBOARD
           Include support for i.MX 6Quad SABRE Lite platform. This includes specific
           configurations for the board and its peripherals.
 
-config MACH_MX6Q_RIOT
-        bool "Support i.MX 6SOLO RIOT Board"
+config MACH_MX6SOLO_RIoTboard
+        bool "Support i.MX 6Solo RIoTboard"
         select ARCH_MX6Q
         select SOC_IMX6Q
         select IMX_HAVE_PLATFORM_IMX_UART
@@ -278,7 +278,7 @@ config MACH_MX6Q_RIOT
         select IMX_HAVE_PLATFORM_IMX_PCIE
         select IMX_HAVE_PLATFORM_IMX_CAAM
         help
-          Include support for i.MX 6SOLO RIOT Board. This includes specific
+          Include support for i.MX 6Solo RIoTboard. This includes specific
           configurations for the board and its peripherals.
 
 config MACH_MX6Q_SABREAUTO

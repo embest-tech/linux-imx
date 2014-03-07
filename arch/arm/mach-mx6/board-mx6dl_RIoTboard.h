@@ -16,11 +16,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef _BOARD_MX6DL_RIOT_H
-#define _BOARD_MX6DL_RIOT_H
+#ifndef _BOARD_MX6DL_RIoTboard_H
+#define _BOARD_MX6DL_RIoTboard_H
 #include <mach/iomux-mx6dl.h>
 
-static iomux_v3_cfg_t mx6dl_riot_pads[] = {
+static iomux_v3_cfg_t mx6dl_RIoTboard_pads[] = {
 	/* AUDMUX */
 	MX6DL_PAD_CSI0_DAT4__AUDMUX_AUD3_TXC,
 	MX6DL_PAD_CSI0_DAT5__AUDMUX_AUD3_TXD,
@@ -271,7 +271,7 @@ static iomux_v3_cfg_t mx6dl_riot_pads[] = {
 //	MX6DL_PAD_GPIO_2__GPIO_1_2,
 };
 
-static iomux_v3_cfg_t mx6dl_riot_csi0_sensor_pads[] = {
+static iomux_v3_cfg_t mx6dl_RIoTboard_csi0_sensor_pads[] = {
 	/* IPU1 Camera */
 	MX6DL_PAD_CSI0_DAT12__IPU1_CSI0_D_12,
 	MX6DL_PAD_CSI0_DAT13__IPU1_CSI0_D_13,
@@ -292,19 +292,19 @@ static iomux_v3_cfg_t mx6dl_riot_csi0_sensor_pads[] = {
         MX6DL_PAD_EIM_D20__GPIO_3_20,   /* Camera PWD */	
 };
 
-static iomux_v3_cfg_t mx6dl_riot_mipi_sensor_pads[] = {
+static iomux_v3_cfg_t mx6dl_RIoTboard_mipi_sensor_pads[] = {
 	MX6DL_PAD_GPIO_0__CCM_CLKO,		/* camera clk */
 
 	MX6DL_PAD_SD1_DAT2__GPIO_1_19,		/* camera PWDN */
 	MX6DL_PAD_SD1_CLK__GPIO_1_20,		/* camera RESET */
 };
 
-static iomux_v3_cfg_t mx6dl_riot_hdmi_ddc_pads[] = {
+static iomux_v3_cfg_t mx6dl_RIoTboard_hdmi_ddc_pads[] = {
 	MX6DL_PAD_KEY_COL3__HDMI_TX_DDC_SCL, /* HDMI DDC SCL */
 	MX6DL_PAD_KEY_ROW3__HDMI_TX_DDC_SDA, /* HDMI DDC SDA */
 };
 
-static iomux_v3_cfg_t mx6dl_riot_i2c2_pads[] = {
+static iomux_v3_cfg_t mx6dl_RIoTboard_i2c2_pads[] = {
 	MX6DL_PAD_KEY_COL3__I2C2_SCL,	/* I2C2 SCL */
 	MX6DL_PAD_KEY_ROW3__I2C2_SDA,	/* I2C2 SDA */
 };
