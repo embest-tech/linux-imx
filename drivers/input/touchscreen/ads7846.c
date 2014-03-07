@@ -30,7 +30,7 @@
 #include <linux/gpio.h>
 #include <linux/spi/spi.h>
 #include <linux/spi/ads7846.h>
-#include <linux/regulator/consumer.h>
+/*#include <linux/regulator/consumer.h>*/
 #include <asm/irq.h>
 
 /*
@@ -95,7 +95,7 @@ struct ads7846 {
 	char			name[32];
 
 	struct spi_device	*spi;
-	struct regulator	*reg;
+/*	struct regulator	*reg;*/
 
 #if defined(CONFIG_HWMON) || defined(CONFIG_HWMON_MODULE)
 	struct attribute_group	*attr_group;
@@ -224,7 +224,7 @@ static void ads7846_restart(struct ads7846 *ts)
 static void __ads7846_disable(struct ads7846 *ts)
 {
 	ads7846_stop(ts);
-	regulator_disable(ts->reg);
+	/*regulator_disable(ts->reg);*/
 
 	/*
 	 * We know the chip's in low power mode since we always
@@ -235,7 +235,7 @@ static void __ads7846_disable(struct ads7846 *ts)
 /* Must be called with ts->lock held */
 static void __ads7846_enable(struct ads7846 *ts)
 {
-	regulator_enable(ts->reg);
+	/*regulator_enable(ts->reg);*/
 	ads7846_restart(ts);
 }
 
@@ -1306,6 +1306,7 @@ static int __devinit ads7846_probe(struct spi_device *spi)
 
 	ads7846_setup_spi_msg(ts, pdata);
 
+#if 0
 	ts->reg = regulator_get(&spi->dev, "vcc");
 	if (IS_ERR(ts->reg)) {
 		err = PTR_ERR(ts->reg);
@@ -1318,6 +1319,7 @@ static int __devinit ads7846_probe(struct spi_device *spi)
 		dev_err(&spi->dev, "unable to enable regulator: %d\n", err);
 		goto err_put_regulator;
 	}
+#endif
 
 	irq_flags = pdata->irq_flags ? : IRQF_TRIGGER_FALLING;
 	irq_flags |= IRQF_ONESHOT;
@@ -1372,9 +1374,9 @@ static int __devinit ads7846_probe(struct spi_device *spi)
  err_free_irq:
 	free_irq(spi->irq, ts);
  err_disable_regulator:
-	regulator_disable(ts->reg);
+/*	regulator_disable(ts->reg);*/
  err_put_regulator:
-	regulator_put(ts->reg);
+/*	regulator_put(ts->reg);*/
  err_free_gpio:
 	if (!ts->get_pendown_state)
 		gpio_free(ts->gpio_pendown);
@@ -1402,9 +1404,10 @@ static int __devexit ads7846_remove(struct spi_device *spi)
 	input_unregister_device(ts->input);
 
 	ads784x_hwmon_unregister(spi, ts);
-
+/*
 	regulator_disable(ts->reg);
 	regulator_put(ts->reg);
+*/
 
 	if (!ts->get_pendown_state) {
 		/*
