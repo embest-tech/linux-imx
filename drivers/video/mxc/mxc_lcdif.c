@@ -39,6 +39,30 @@ static struct fb_videomode lcdif_modedb[] = {
 	FB_SYNC_CLK_LAT_FALL,
 	FB_VMODE_NONINTERLACED,
 	0,},
+        {
+        /* 4.3inch_LCD */
+        "4.3inch_LCD", 60, 480, 272, KHZ2PICOS(9600), 2, 2, 2, 2, 41, 10,
+        FB_SYNC_CLK_LAT_FALL,
+        FB_VMODE_NONINTERLACED,
+        0,},
+        {
+        /* 7inch_LCD */
+        "7inch_LCD", 60, 800, 480, KHZ2PICOS(36000), 1, 1, 12, 25, 48, 3,
+        FB_SYNC_CLK_LAT_FALL,
+        FB_VMODE_NONINTERLACED,
+        0,},
+        {
+        /* VGA 1024x768 */
+        "VGA", 60, 1024, 768, KHZ2PICOS(72000), 18, 248, 3, 29, 53, 6,
+        FB_SYNC_CLK_LAT_FALL,
+        FB_VMODE_NONINTERLACED,
+        0,},
+        {
+        /* LVDS 800x600 */
+        "LVDS", 60, 800, 600, KHZ2PICOS(36000), 151, 39, 23, 1, 63, 3,
+        FB_SYNC_CLK_LAT_FALL,
+        FB_VMODE_NONINTERLACED,
+        0,},
 };
 static int lcdif_modedb_sz = ARRAY_SIZE(lcdif_modedb);
 

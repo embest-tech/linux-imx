@@ -30,6 +30,7 @@
 #include <linux/fsl_devices.h>
 #include <linux/spi/spi.h>
 #include <linux/spi/flash.h>
+#include <linux/spi/ads7846.h>
 #include <linux/i2c.h>
 #include <linux/i2c/pca953x.h>
 #include <linux/ata.h>
@@ -103,7 +104,7 @@
 #define RIoTboard_POWER_OFF	IMX_GPIO_NR(3, 29)
 
 #define RIoTboard_CAN1_STBY	IMX_GPIO_NR(4, 5)
-#define RIoTboard_ECSPI1_CS0  IMX_GPIO_NR(4, 9)
+#define RIoTboard_ECSPI1_CS0  	IMX_GPIO_NR(4, 9)
 #define RIoTboard_CODEC_PWR_EN	IMX_GPIO_NR(4, 10)
 #define RIoTboard_HDMI_CEC_IN	IMX_GPIO_NR(4, 11)
 #define RIoTboard_PCIE_DIS_B	IMX_GPIO_NR(4, 14)
@@ -111,8 +112,7 @@
 #define RIoTboard_DI0_D0_CS	IMX_GPIO_NR(5, 0)
 #define RIoTboard_PCIE_WAKE_B	IMX_GPIO_NR(5, 20)
 
-#define RIoTboard_CAP_TCH_INT1	IMX_GPIO_NR(6, 7)
-#define RIoTboard_CAP_TCH_INT0	IMX_GPIO_NR(6, 8)
+#define RIoTboard_RES_TCH_INT	IMX_GPIO_NR(3, 24)
 #define RIoTboard_DISP_RST_B	IMX_GPIO_NR(6, 11)
 #define RIoTboard_DISP_PWR_EN	IMX_GPIO_NR(6, 14)
 #define RIoTboard_LED_PWN          	IMX_GPIO_NR(6, 15)
@@ -236,44 +236,36 @@ static const struct spi_imx_master mx6solo_RIoTboard_spi_data __initconst = {
 	.num_chipselect = ARRAY_SIZE(mx6solo_RIoTboard_spi_cs),
 };
 
-#if defined(CONFIG_MTD_M25P80) || defined(CONFIG_MTD_M25P80_MODULE)
-static struct mtd_partition imx6_RIoTboard_spi_nor_partitions[] = {
-	{
-	 .name = "bootloader",
-	 .offset = 0,
-	 .size = 0x00100000,
-	},
-	{
-	 .name = "kernel",
-	 .offset = MTDPART_OFS_APPEND,
-	 .size = MTDPART_SIZ_FULL,
-	},
+static struct ads7846_platform_data ads7846_config = {
+        .x_max                  = 0x0fff,
+        .y_max                  = 0x0fff,
+//      .x_plate_ohms           = 180,
+//      .pressure_max           = 255,
+        .debounce_max           = 10,
+        .debounce_tol           = 5,
+        .debounce_rep           = 1,
+        .gpio_pendown           = RIoTboard_RES_TCH_INT,
+        .keep_vref_on           = 1,
+        .settle_delay_usecs     = 150,
+        .wakeup                 = true,
+        .swap_xy                = 1,
 };
 
-static struct flash_platform_data imx6_RIoTboard__spi_flash_data = {
-	.name = "m25p80",
-	.parts = imx6_RIoTboard_spi_nor_partitions,
-	.nr_parts = ARRAY_SIZE(imx6_RIoTboard_spi_nor_partitions),
-	.type = "sst25vf016b",
-};
-#endif
-
-static struct spi_board_info imx6_RIoTboard_spi_nor_device[] __initdata = {
-#if defined(CONFIG_MTD_M25P80)
-	{
-		.modalias = "m25p80",
-		.max_speed_hz = 20000000, /* max spi clock (SCK) speed in HZ */
-		.bus_num = 0,
-		.chip_select = 0,
-		.platform_data = &imx6_RIoTboard__spi_flash_data,
-	},
-#endif
+static struct spi_board_info imx6_RIoTboard_spi_devices[] __initdata = {
+        {
+                .modalias = "ads7846",
+                .bus_num = 0,
+                .chip_select = 0,
+                .max_speed_hz = 1500000,
+                .irq = gpio_to_irq(RIoTboard_RES_TCH_INT),
+                .platform_data = &ads7846_config,
+        },
 };
 
 static void spi_device_init(void)
 {
-	spi_register_board_info(imx6_RIoTboard_spi_nor_device,
-				ARRAY_SIZE(imx6_RIoTboard_spi_nor_device));
+	spi_register_board_info(imx6_RIoTboard_spi_devices,
+				ARRAY_SIZE(imx6_RIoTboard_spi_devices));
 }
 
 static struct imx_ssi_platform_data mx6_RIoTboard_ssi_pdata = {
