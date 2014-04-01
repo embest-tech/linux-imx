@@ -116,9 +116,8 @@ static iomux_v3_cfg_t mx6dl_RIoTboard_pads[] = {
         MX6DL_PAD_EIM_D26__UART2_TXD,
         MX6DL_PAD_EIM_D27__UART2_RXD,
 #endif
-	/* UART3 for gps */
-	MX6DL_PAD_EIM_D24__UART3_TXD,
-	MX6DL_PAD_EIM_D25__UART3_RXD,
+        MX6DL_PAD_EIM_D24__GPIO_3_24,   //TP Int
+        MX6DL_PAD_EIM_D25__GPIO_3_25,   //TP Busy
 
 	/* USB */
 	MX6DL_PAD_ENET_RX_ER__ANATOP_USBOTG_ID,

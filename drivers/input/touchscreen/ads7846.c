@@ -699,7 +699,7 @@ static int ads7846_get_value(struct ads7846 *ts, struct spi_message *m)
 		 * adjust:  on-wire is a must-ignore bit, a BE12 value, then
 		 * padding; built from two 8 bit values written msb-first.
 		 */
-		return be16_to_cpup((__be16 *)t->rx_buf) >> 3;
+		return be16_to_cpup((__be16 *)t->rx_buf) >> /*3*/4;	//embest
 	}
 }
 
@@ -1324,7 +1324,7 @@ static int __devinit ads7846_probe(struct spi_device *spi)
 	irq_flags = pdata->irq_flags ? : IRQF_TRIGGER_FALLING;
 	irq_flags |= IRQF_ONESHOT;
 
-	err = request_threaded_irq(spi->irq, ads7846_hard_irq, ads7846_irq,
+	err = request_threaded_irq(spi->irq, /*ads7846_hard_irq*/NULL, ads7846_irq,
 				   irq_flags, spi->dev.driver->name, ts);
 	if (err && !pdata->irq_flags) {
 		dev_info(&spi->dev,
