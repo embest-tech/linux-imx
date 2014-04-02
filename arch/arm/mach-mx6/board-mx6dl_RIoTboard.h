@@ -200,6 +200,7 @@ static iomux_v3_cfg_t mx6dl_RIoTboard_pads[] = {
 	/* DI1_D0_CS */
 	MX6DL_PAD_EIM_BCLK__GPIO_6_31,
 	/* DISP_PWM */
+	MX6DL_PAD_SD1_DAT1__PWM3_PWMO,
 	MX6DL_PAD_SD1_CMD__PWM4_PWMO,
 	/* DISP0 power enable */
 	MX6DL_PAD_ENET_TXD0__GPIO_1_30,

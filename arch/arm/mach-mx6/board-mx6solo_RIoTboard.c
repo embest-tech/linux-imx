@@ -950,8 +950,16 @@ static void __init imx6q_add_device_buttons(void)
 static void __init imx6q_add_device_buttons(void) {}
 #endif
 
+/* Backlight PWM for lcd*/
+static struct platform_pwm_backlight_data mx6_RIoTboard_lcd_backlight_data4 = {
+        .pwm_id                 = 2,
+        .max_brightness         = 255,
+        .dft_brightness         = 128,
+        .pwm_period_ns          = 50000,
+};
+
 /* Backlight PWM for lvds*/
-static struct platform_pwm_backlight_data mx6_RIoTboard_pwm_backlight_data4 = {
+static struct platform_pwm_backlight_data mx6_RIoTboard_lvds_backlight_data4 = {
         .pwm_id                 = 3,
         .max_brightness         = 255,
         .dft_brightness         = 128,
@@ -1130,8 +1138,9 @@ static void __init mx6_RIoTboard_board_init(void)
 	imx6q_add_mxc_pwm(0);
 	imx6q_add_mxc_pwm(1);
 	imx6q_add_mxc_pwm(2);
+	imx6q_add_mxc_pwm_backlight(2, &mx6_RIoTboard_lcd_backlight_data4);
 	imx6q_add_mxc_pwm(3);
-	imx6q_add_mxc_pwm_backlight(3, &mx6_RIoTboard_pwm_backlight_data4);
+	imx6q_add_mxc_pwm_backlight(3, &mx6_RIoTboard_lvds_backlight_data4);
 
 	imx6q_add_otp();
 	imx6q_add_viim();
