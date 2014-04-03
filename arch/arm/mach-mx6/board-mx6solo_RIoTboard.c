@@ -414,8 +414,20 @@ static struct fsl_mxc_camera_platform_data mipi_csi2_data = {
 	.pwdn = mx6q_mipi_powerdown,
 };
 
-static struct imxi2c_platform_data mx6solo_RIoTboard_i2c_data = {
-	.bitrate = 100000,
+static struct imxi2c_platform_data mx6solo_RIoTboard_i2c0_data = {
+	.bitrate = 400000,
+};
+
+static struct imxi2c_platform_data mx6solo_RIoTboard_i2c1_data = {
+        .bitrate = 100000,
+};
+
+static struct imxi2c_platform_data mx6solo_RIoTboard_i2c2_data = {
+        .bitrate = 400000,
+};
+
+static struct imxi2c_platform_data mx6solo_RIoTboard_i2c3_data = {
+        .bitrate = 400000,
 };
 
 static struct fsl_mxc_lightsensor_platform_data ls_data = {
@@ -441,6 +453,9 @@ static struct i2c_board_info mxc_i2c3_board_info[] __initdata = {
         {
                 I2C_BOARD_INFO("ov2656", 0x30),
                 .platform_data = (void *)&camera_data,
+        },
+        {
+                I2C_BOARD_INFO("ch7033", 0x76),
         },
 };
 
@@ -1151,10 +1166,10 @@ static void __init mx6_RIoTboard_board_init(void)
 
 	ldb_init();
 
-	imx6q_add_imx_i2c(0, &mx6solo_RIoTboard_i2c_data);
-	imx6q_add_imx_i2c(1, &mx6solo_RIoTboard_i2c_data);
-	imx6q_add_imx_i2c(2, &mx6solo_RIoTboard_i2c_data);
-	imx6q_add_imx_i2c(3, &mx6solo_RIoTboard_i2c_data);
+	imx6q_add_imx_i2c(0, &mx6solo_RIoTboard_i2c0_data);
+	imx6q_add_imx_i2c(1, &mx6solo_RIoTboard_i2c1_data);
+	imx6q_add_imx_i2c(2, &mx6solo_RIoTboard_i2c2_data);
+	imx6q_add_imx_i2c(3, &mx6solo_RIoTboard_i2c3_data);
 	i2c_register_board_info(0, mxc_i2c0_board_info,
 			ARRAY_SIZE(mxc_i2c0_board_info));
 	i2c_register_board_info(1, mxc_i2c1_board_info,
