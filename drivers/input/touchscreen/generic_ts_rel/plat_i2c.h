@@ -69,6 +69,11 @@
 #define PLATFORM_RIoTboard_RST_PIN                    IMX_GPIO_NR(1, 29)
 #define PLATFORM_RIoTboard_IRQ_PIN                    IMX_GPIO_NR(6, 14)
 
+/* marsboard config */
+#define PLATFORM_MARSBOARD_PWR_PIN                    0//
+#define PLATFORM_MARSBOARD_RST_PIN                    IMX_GPIO_NR(1, 29)
+#define PLATFORM_MARSBOARD_IRQ_PIN                    IMX_GPIO_NR(6, 14)
+
 // ****************************************************************************
 // Types
 // ****************************************************************************

@@ -107,7 +107,12 @@ void platform_i2c_get_cfg(struct struct_platform_i2c_var *platform_i2c_data)
 		platform_i2c_data->pwr = PLATFORM_RIoTboard_PWR_PIN;
 		platform_i2c_data->rst = PLATFORM_RIoTboard_RST_PIN;
 		platform_i2c_data->ss = PLATFORM_RIoTboard_IRQ_PIN;
+	} else if (machine_is_mx6q_marsboard()) {
+	        platform_i2c_data->pwr = PLATFORM_MARSBOARD_PWR_PIN;
+                platform_i2c_data->rst = PLATFORM_MARSBOARD_RST_PIN;
+                platform_i2c_data->ss = PLATFORM_MARSBOARD_IRQ_PIN;
 	}
+
 	/* IRQ config*/
 	platform_i2c_data->irq = gpio_to_irq(platform_i2c_data->ss);
 }

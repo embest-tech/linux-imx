@@ -13,6 +13,7 @@ obj-$(CONFIG_MACH_MX6SL_ARM2) += board-mx6sl_arm2.o mx6sl_arm2_pmic_pfuze100.o
 obj-$(CONFIG_MACH_MX6SL_EVK) += board-mx6sl_evk.o mx6sl_evk_pmic_pfuze100.o
 obj-$(CONFIG_MACH_MX6Q_SABRELITE) += board-mx6q_sabrelite.o
 obj-$(CONFIG_MACH_MX6Q_SABRESD) += board-mx6q_sabresd.o mx6q_sabresd_pmic_pfuze100.o
+obj-$(CONFIG_MACH_MX6Q_MARSBOARD) += board-mx6q_marsboard.o
 obj-$(CONFIG_MACH_MX6SOLO_RIoTboard) += board-mx6solo_RIoTboard.o mx6solo_RIoTboard_pmic_pfuze100.o
 obj-$(CONFIG_MACH_MX6Q_SABREAUTO) += board-mx6q_sabreauto.o mx6q_sabreauto_pmic_pfuze100.o
 obj-$(CONFIG_MACH_MX6Q_HDMIDONGLE) += board-mx6q_hdmidongle.o mx6q_hdmidongle_pmic_wm831x.o
