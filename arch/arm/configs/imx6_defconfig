@@ -1240,6 +1240,11 @@ CONFIG_I2C_IMX=y
 # Other I2C/SMBus bus drivers
 #
 # CONFIG_I2C_STUB is not set
+
+#
+# Miscellaneous I2C Chip support
+#
+CONFIG_VGA_CH7033=y
 # CONFIG_I2C_DEBUG_CORE is not set
 # CONFIG_I2C_DEBUG_ALGO is not set
 # CONFIG_I2C_DEBUG_BUS is not set

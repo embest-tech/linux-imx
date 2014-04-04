@@ -474,7 +474,7 @@ static struct imxi2c_platform_data mx6solo_RIoTboard_i2c0_data = {
 };
 
 static struct imxi2c_platform_data mx6solo_RIoTboard_i2c1_data = {
-        .bitrate = 400000,
+        .bitrate = 100000,
 };
 
 static struct imxi2c_platform_data mx6solo_RIoTboard_i2c2_data = {
@@ -495,10 +495,6 @@ static struct i2c_board_info mxc_i2c1_board_info[] __initdata = {
 	{
 		I2C_BOARD_INFO("mxc_hdmi_i2c", 0x50),
 	},
-	{
-		I2C_BOARD_INFO("ov5640_mipi", 0x3c),
-		.platform_data = (void *)&mipi_csi2_data,
-	},
 };
 
 static struct i2c_board_info mxc_i2c2_board_info[] __initdata = {
@@ -508,6 +504,9 @@ static struct i2c_board_info mxc_i2c3_board_info[] __initdata = {
         {
                 I2C_BOARD_INFO("ov2656", 0x30),
                 .platform_data = (void *)&camera_data,
+        },
+        {
+                I2C_BOARD_INFO("ch7033", 0x76),
         },
 };
 
