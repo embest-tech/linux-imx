@@ -135,6 +135,7 @@ static iomux_v3_cfg_t mx6q_marsboard_pads[] = {
 	MX6Q_PAD_EIM_D17__ECSPI1_MISO,
 	MX6Q_PAD_EIM_D18__ECSPI1_MOSI,
 	MX6Q_PAD_EIM_D16__ECSPI1_SCLK,
+	MX6Q_PAD_EIM_EB2__GPIO_2_30,    /*CSPI1_CS0*/
 //	MX6Q_PAD_EIM_D19__GPIO_3_19,	/*SS1*/
 
         /* ECSPI2 */
