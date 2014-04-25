@@ -617,7 +617,7 @@ static struct fsl_mxc_hdmi_platform_data hdmi_data = {
 
 static struct fsl_mxc_hdmi_core_platform_data hdmi_core_data = {
 	.ipu_id = 0,
-	.disp_id = 1,
+	.disp_id = 0,
 };
 
 static struct fsl_mxc_lcd_platform_data lcdif_data = {
@@ -644,11 +644,11 @@ static void ldb_init(void)
 
 static struct fsl_mxc_ldb_platform_data ldb_data = {
 	.ipu_id = 0,
-	.disp_id = 0,
+	.disp_id = 1,
 	.ext_ref = 1,
 	.mode = LDB_SEP0,
 	.sec_ipu_id = 0,
-	.sec_disp_id = 1,
+	.sec_disp_id = 0,
 };
 
 static struct imx_ipuv3_platform_data ipu_data[] = {
@@ -953,7 +953,14 @@ static void __init imx6q_add_device_buttons(void) {}
 #endif
 #endif
 
-static struct platform_pwm_backlight_data mx6_RIoTboard_pwm_backlight_data = {
+static struct platform_pwm_backlight_data mx6_RIoTboard_lcd_backlight_data = {
+    .pwm_id = 2,
+    .max_brightness = 248,
+    .dft_brightness = 128,
+    .pwm_period_ns = 50000,
+};
+
+static struct platform_pwm_backlight_data mx6_RIoTboard_lvds_backlight_data = {
 	.pwm_id = 3,
 	.max_brightness = 248,
 	.dft_brightness = 128,
@@ -1226,8 +1233,9 @@ static void __init mx6_RIoTboard_board_init(void)
 	imx6q_add_mxc_pwm(0);
 	imx6q_add_mxc_pwm(1);
 	imx6q_add_mxc_pwm(2);
+	imx6q_add_mxc_pwm_backlight(2, &mx6_RIoTboard_lcd_backlight_data);
 	imx6q_add_mxc_pwm(3);
-	imx6q_add_mxc_pwm_backlight(3, &mx6_RIoTboard_pwm_backlight_data);
+	imx6q_add_mxc_pwm_backlight(3, &mx6_RIoTboard_lvds_backlight_data);
 
 	imx6q_add_otp();
 	imx6q_add_viim();
