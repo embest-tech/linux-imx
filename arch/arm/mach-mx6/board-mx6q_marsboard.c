@@ -292,9 +292,17 @@ static iomux_v3_cfg_t mx6q_marsboard_pads[] = {
 	MX6Q_PAD_EIM_D26__UART2_TXD,
 	MX6Q_PAD_EIM_D27__UART2_RXD,
 
+    /*UART3 */
+    MX6Q_PAD_EIM_D24__UART3_TXD,
+    MX6Q_PAD_EIM_D25__UART3_RXD,
+
 	/* UART4 */
 	MX6Q_PAD_KEY_COL0__UART4_TXD,
 	MX6Q_PAD_KEY_ROW0__UART4_RXD,		
+
+	/*UART5*/
+	MX6Q_PAD_KEY_COL1__UART5_TXD,
+	MX6Q_PAD_KEY_ROW1__UART5_RXD,
 
 	/* USBOTG ID pin */
 //	MX6Q_PAD_GPIO_1__USBOTG_ID,
@@ -467,6 +475,7 @@ static inline void mx6q_marsboard_init_uart(void)
 	imx6q_add_imx_uart(1, NULL);
 	imx6q_add_imx_uart(2, NULL);
 	imx6q_add_imx_uart(3, NULL);
+	imx6q_add_imx_uart(4, NULL);
 }
 
 static int mx6q_marsboard_fec_phy_init(struct phy_device *phydev)
