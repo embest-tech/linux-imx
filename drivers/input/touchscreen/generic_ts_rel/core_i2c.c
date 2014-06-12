@@ -635,8 +635,8 @@ void core_shutdown(struct i2c_client *client)
 {
 	struct struct_core_i2c_var *core_data = i2c_get_clientdata(client);
 
-        if ( core_data == NULL)
-                return ;
+    if (core_data == NULL)
+    	return ;
 
 	char *buf = (char*)core_data->cdata->pts_data;
 
@@ -652,6 +652,10 @@ static
 int core_suspend(struct i2c_client *client, pm_message_t mesg)
 {
 	struct struct_core_i2c_var *core_data = i2c_get_clientdata(client);
+
+    if (core_data == NULL)
+    	return 0;
+
 	char *buf = (char*)core_data->cdata->pts_data;
 
 	PRINT_CORE_MSG("%s: >>>>>>>>>>>>>>>>>>>\n", __FUNCTION__);
@@ -682,6 +686,9 @@ int core_resume(struct i2c_client *client)
 
 	PRINT_CORE_MSG("%s: >>>>>>>>>>>>>>>>>>>\n", __FUNCTION__);
 
+    if (core_data == NULL)
+        return 0;
+
 	if ( core_data->state == CORE_STATE_SLEEP ) {
 		/* Hardware reset */
 		if ( core_data->pdata->i2c->ops.hw_reset )
@@ -701,6 +708,9 @@ void core_early_suspend(struct early_suspend *handler)
 
 	PRINT_CORE_MSG("%s: >>>>>>>>>>>>>>>>>>>\n", __FUNCTION__);
 
+    if (core_data == NULL)
+        return ;
+
 	core_suspend(core_data->pdata->i2c->client, PMSG_SUSPEND);
 }
 
@@ -710,6 +720,9 @@ void core_early_resume(struct early_suspend *handler)
 	struct struct_core_i2c_var *core_data = container_of(handler, struct struct_core_i2c_var, early_suspend);
 
 	PRINT_CORE_MSG("%s: >>>>>>>>>>>>>>>>>>>\n", __FUNCTION__);
+
+    if (core_data == NULL)
+        return ;
 
 	core_resume(core_data->pdata->i2c->client);
 }
@@ -722,8 +735,8 @@ int __devexit core_remove(struct i2c_client *client)
 
 	PRINT_CORE_MSG("%s: >>>>>>>>>>>>>>>>>>>\n", __FUNCTION__);
 
-        if ( core_data == NULL)
-                return -1;
+    if (core_data == NULL)
+        return -1;
 
 	free_irq(core_data->pdata->i2c->irq, core_data);
 	cancel_work_sync(&core_data->event_work);
