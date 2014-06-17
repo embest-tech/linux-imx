@@ -29,6 +29,13 @@
 		reg = <0x10000000 0x40000000>;
 	};
 
+    backlight {
+        compatible = "pwm-backlight";
+        pwms = <&pwm4 0 5000000>;
+        brightness-levels = <0 4 8 16 32 64 128 255>;
+        default-brightness-level = <7>;
+    };
+
 	gpio-keys {
 		compatible = "gpio-keys";
 		home {
@@ -48,10 +55,6 @@
 
 	hannstar_cabc {
 		compatible = "hannstar,cabc";
-
-		lvds_share {
-			gpios = <&gpio6 15 GPIO_ACTIVE_HIGH>;
-		};
 	};
 
 	mxcfb1: fb@0 {
@@ -353,8 +356,9 @@
 };
 
 &i2c3 {
+	clock-frequency = <400000>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_i2c3_4>;
+	pinctrl-0 = <&pinctrl_i2c3_5>;
 	status = "okay";
 };
 
@@ -365,7 +369,16 @@
 	hog {
 		pinctrl_hog: hoggrp {
 			fsl,pins = <
-				MX6QDL_PAD_NANDF_CS2__GPIO6_IO15 0x1f059
+				/* generic_ts */	
+				MX6QDL_PAD_ENET_TXD1__GPIO1_IO29 0x80000000
+				MX6QDL_PAD_NANDF_CS1__GPIO6_IO14 0x80000000
+				MX6QDL_PAD_NANDF_CS2__GPIO6_IO15 0x80000000
+				/* sdhc2 */
+				MX6QDL_PAD_GPIO_2__GPIO1_IO02 0x80000000
+				MX6QDL_PAD_GPIO_4__GPIO1_IO04 0x80000000
+				/* sdhc3 */
+				MX6QDL_PAD_SD3_DAT4__GPIO7_IO01 0x80000000
+				MX6QDL_PAD_SD3_DAT5__GPIO7_IO00 0x80000000
 				MX6QDL_PAD_EIM_A24__GPIO5_IO04   0x80000000
 				MX6QDL_PAD_EIM_EB0__GPIO2_IO28   0x80000000
 				MX6QDL_PAD_EIM_EB1__GPIO2_IO29	0x80000000
@@ -386,7 +399,14 @@
 	mode = "sep0";
 	sec_ipu_id = <0>;
 	sec_disp_id = <1>;
+	ldb-en-gpio = <&gpio6 15 GPIO_ACTIVE_HIGH>;
 	status = "okay";
+};
+
+&pwm4 {
+    pinctrl-names = "default";
+    pinctrl-0 = <&pinctrl_pwm4_1>;
+    status = "okay";
 };
 
 &mlb {
@@ -426,6 +446,7 @@
 &usdhc2 {
     pinctrl-names = "default";
     pinctrl-0 = <&pinctrl_usdhc2_2>;
+	bus-width = <4>;
     cd-gpios = <&gpio1 4 0>;
     wp-gpios = <&gpio1 2 0>;
     no-1-8-v;
@@ -437,6 +458,7 @@
 &usdhc3 {
     pinctrl-names = "default";
     pinctrl-0 = <&pinctrl_usdhc3_2>;
+	bus-width = <4>;	
     cd-gpios = <&gpio7 0 0>;
     wp-gpios = <&gpio7 1 0>;
     no-1-8-v;

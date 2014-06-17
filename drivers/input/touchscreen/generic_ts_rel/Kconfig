@@ -1,0 +1,113 @@
+#
+# Touchscreen driver configuration
+#
+
+
+config TOUCHSCREEN_GENERIC_TS
+	tristate "VTL CT36X based generic touchscreens"
+	default y
+
+if TOUCHSCREEN_GENERIC_TS
+choice
+	prompt "Device driver hardware interface support"
+	default TOUCHSCREEN_GENERIC_TS_INTERFACE_I2C
+
+	config TOUCHSCREEN_GENERIC_TS_INTERFACE_I2C
+	  bool "I2C"
+
+	config TOUCHSCREEN_GENERIC_TS_INTERFACE_USB
+	  select USB
+	  bool "USB"
+endchoice
+
+choice
+	prompt "Device driver platform support"
+	default TOUCHSCREEN_GENERIC_TS_PLATFORM_ABS
+	depends on TOUCHSCREEN_GENERIC_TS_INTERFACE_I2C
+
+	config TOUCHSCREEN_GENERIC_TS_PLATFORM_ABS
+	  bool "Generic"
+
+	config TOUCHSCREEN_GENERIC_TS_PLATFORM_RKXX
+	  bool "RockChip"
+
+	config TOUCHSCREEN_GENERIC_TS_PLATFORM_A1X
+	  bool "AllWinner"
+
+	config TOUCHSCREEN_GENERIC_TS_PLATFORM_AML
+	  bool "Amlogic"
+endchoice
+
+choice
+	prompt "Device driver chip support"
+	default TOUCHSCREEN_GENERIC_TS_CHIP_CT360
+	depends on !TOUCHSCREEN_GENERIC_TS_MISC_AUTO_CHIP_SELECT
+
+	config TOUCHSCREEN_GENERIC_TS_CHIP_CT360
+	  bool "CT360"
+
+	config TOUCHSCREEN_GENERIC_TS_CHIP_CT365
+	  bool "CT362/CT363/CT365"
+endchoice
+
+config TOUCHSCREEN_GENERIC_TS_MISC
+	bool "Device driver misc support"
+	default y
+	depends on TOUCHSCREEN_GENERIC_TS_INTERFACE_I2C
+
+		config TOUCHSCREEN_GENERIC_TS_MISC_AUTO_FW_UPDATE
+		bool "auto firmware update"
+		default n
+		depends on TOUCHSCREEN_GENERIC_TS_MISC
+
+		config TOUCHSCREEN_GENERIC_TS_MISC_AUTO_CHIP_SELECT
+		bool "auto chip select"
+		default n
+		depends on TOUCHSCREEN_GENERIC_TS_MISC
+
+config TOUCHSCREEN_GENERIC_TS_SINGLE_TOUCH
+        bool "generic touchscreen as single-touch"
+        default N
+        depends on TOUCHSCREEN_GENERIC_TS
+        help
+          If you say yes here you get single-touch touchscreen support.
+          If you say "no", you'll get the normal multi-touch.
+
+config TOUCHSCREEN_GENERIC_TS_ENHANCE
+	bool "Device driver enhancement support"
+	default n
+
+config TOUCHSCREEN_GENERIC_TS_DEBUG
+	bool "Device driver debug support"
+	default n
+
+		config TOUCHSCREEN_GENERIC_TS_DEBUG_CORE
+		bool "core debug support"
+		default y
+		depends on TOUCHSCREEN_GENERIC_TS_DEBUG
+
+		config TOUCHSCREEN_GENERIC_TS_DEBUG_PLATFORM
+		bool "platform debug support"
+		default y
+		depends on TOUCHSCREEN_GENERIC_TS_DEBUG
+
+		config TOUCHSCREEN_GENERIC_TS_DEBUG_TOUCH
+		bool "touch debug support"
+		default y
+		depends on TOUCHSCREEN_GENERIC_TS_DEBUG
+
+		config TOUCHSCREEN_GENERIC_TS_DEBUG_FSUTILS
+		bool "file system utilities debug support"
+		default y
+		depends on TOUCHSCREEN_GENERIC_TS_DEBUG
+
+		config TOUCHSCREEN_GENERIC_TS_DEBUG_CHIP
+		bool "chip debug support"
+		default y
+		depends on TOUCHSCREEN_GENERIC_TS_DEBUG
+
+		config TOUCHSCREEN_GENERIC_TS_DEBUG_ENHANCE
+		bool "enhance debug support"
+		default y
+		depends on TOUCHSCREEN_GENERIC_TS_DEBUG
+endif
