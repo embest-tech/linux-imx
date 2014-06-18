@@ -388,6 +388,18 @@
 	status = "okay";
 };
 
+&i2c4 {
+    clock-frequency = <400000>;
+    pinctrl-names = "default";
+    pinctrl-0 = <&pinctrl_i2c4_1>;
+    status = "okay";
+
+	ch7033@76 {
+		compatible = "chrontel,ch7033";
+		reg = <0x76>;
+	};	
+};
+
 &iomuxc {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_hog>;

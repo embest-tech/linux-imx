@@ -1304,16 +1304,12 @@ static int ads7846_probe(struct spi_device *spi)
             return PTR_ERR(pdata);
 	}
 
-	printk("----pdata ok\n");
-
 	/* don't exceed max specified sample rate */
 	if (spi->max_speed_hz > (125000 * SAMPLE_BITS)) {
 		dev_dbg(&spi->dev, "f(sample) %d KHz?\n",
 				(spi->max_speed_hz/SAMPLE_BITS)/1000);
 		return -EINVAL;
 	}
-
-	printk("----1\n");
 
 	/* We'd set TX word size 8 bits and RX word size to 13 bits ... except
 	 * that even if the hardware can do that, the SPI controller driver
@@ -1325,8 +1321,6 @@ static int ads7846_probe(struct spi_device *spi)
 	if (err < 0)
 		return err;
 
-	printk("----2\n");
-
 	ts = kzalloc(sizeof(struct ads7846), GFP_KERNEL);
 	packet = kzalloc(sizeof(struct ads7846_packet), GFP_KERNEL);
 	input_dev = input_allocate_device();
@@ -1337,27 +1331,19 @@ static int ads7846_probe(struct spi_device *spi)
 
 	spi_set_drvdata(spi, ts);
 
-	printk("----3\n");
-
 	ts->packet = packet;
 	ts->spi = spi;
 	ts->input = input_dev;
 	ts->vref_mv = pdata->vref_mv;
 	ts->swap_xy = pdata->swap_xy;
 
-	printk("----4\n");
-
 	mutex_init(&ts->lock);
 	init_waitqueue_head(&ts->wait);
 
-	printk("----5\n");
-	
 	ts->model = pdata->model ? : 7846;
 	ts->vref_delay_usecs = pdata->vref_delay_usecs ? : 100;
 	ts->x_plate_ohms = pdata->x_plate_ohms ? : 400;
 	ts->pressure_max = pdata->pressure_max ? : ~0;
-
-	printk("----6\n");
 
 	if (pdata->filter != NULL) {
 		if (pdata->filter_init != NULL) {
@@ -1379,8 +1365,6 @@ static int ads7846_probe(struct spi_device *spi)
 		ts->filter = ads7846_no_filter;
 	}
 
-	printk("----7\n");
-
 	err = ads7846_setup_pendown(spi, ts, pdata);
 	if (err)
 		goto err_cleanup_filter;
@@ -1393,8 +1377,6 @@ static int ads7846_probe(struct spi_device *spi)
 
 	snprintf(ts->phys, sizeof(ts->phys), "%s/input0", dev_name(&spi->dev));
 	snprintf(ts->name, sizeof(ts->name), "ADS%d Touchscreen", ts->model);
-
-	printk("----8\n");
 
 	input_dev->name = ts->name;
 	input_dev->phys = ts->phys;
@@ -1415,7 +1397,6 @@ static int ads7846_probe(struct spi_device *spi)
 
 	ads7846_setup_spi_msg(ts, pdata);
 	
-	printk("----9\n");
 /*
 	ts->reg = regulator_get(&spi->dev, "vcc");
 	if (IS_ERR(ts->reg)) {
@@ -1449,15 +1430,11 @@ static int ads7846_probe(struct spi_device *spi)
 		goto err_disable_regulator;
 	}
 
-	printk("----10\n");
-
 	err = ads784x_hwmon_register(spi, ts);
 	if (err)
 		goto err_free_irq;
 
 	dev_info(&spi->dev, "touchscreen, irq %d\n", spi->irq);
-
-	printk("----11\n");
 
 	/*
 	 * Take a first sample, leaving nPENIRQ active and vREF off; avoid
@@ -1472,17 +1449,11 @@ static int ads7846_probe(struct spi_device *spi)
 	if (err)
 		goto err_remove_hwmon;
 
-	printk("---12\n");
-
 	err = input_register_device(input_dev);
 	if (err)
 		goto err_remove_attr_group;
 
-	printk("----13\n");
-
 	device_init_wakeup(&spi->dev, pdata->wakeup);
-
-	printk("----14\n");
 
 	return 0;
 
