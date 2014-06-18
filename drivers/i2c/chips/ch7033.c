@@ -367,11 +367,9 @@ static int ch7033_probe(struct i2c_client *client,
 	int result;
 	struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
 
-	struct input_dev *idev;
-
 	g_client = client;
 
-	printk(KERN_INFO "----ch7033_probe\n");
+	printk(KERN_INFO "ch7033_probe\n");
 	result = i2c_check_functionality(adapter, 
 		I2C_FUNC_SMBUS_BYTE|I2C_FUNC_SMBUS_BYTE_DATA);
 	assert(result);
