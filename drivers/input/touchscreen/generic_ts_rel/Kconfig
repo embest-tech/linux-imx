@@ -40,7 +40,7 @@ endchoice
 
 choice
 	prompt "Device driver chip support"
-	default TOUCHSCREEN_GENERIC_TS_CHIP_CT360
+	default TOUCHSCREEN_GENERIC_TS_CHIP_CT365
 	depends on !TOUCHSCREEN_GENERIC_TS_MISC_AUTO_CHIP_SELECT
 
 	config TOUCHSCREEN_GENERIC_TS_CHIP_CT360
@@ -67,7 +67,7 @@ config TOUCHSCREEN_GENERIC_TS_MISC
 
 config TOUCHSCREEN_GENERIC_TS_SINGLE_TOUCH
         bool "generic touchscreen as single-touch"
-        default N
+        default y
         depends on TOUCHSCREEN_GENERIC_TS
         help
           If you say yes here you get single-touch touchscreen support.

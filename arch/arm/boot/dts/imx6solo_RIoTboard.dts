@@ -57,6 +57,16 @@
 		compatible = "hannstar,cabc";
 	};
 
+    lcd@0 {
+        compatible = "fsl,lcd";
+        ipu_id = <0>;
+        disp_id = <0>;
+        default_ifmt = "RGB565";
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_ipu1_1>;
+        status = "okay";
+    };
+
 	mxcfb1: fb@0 {
 		compatible = "fsl,mxc_sdc_fb";
 		disp_dev = "ldb";
@@ -180,17 +190,33 @@
 
 &ecspi1 {
 	fsl,spi-num-chipselects = <1>;
-	cs-gpios = <&gpio3 19 0>;
+	cs-gpios = <&gpio4 9 0>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_ecspi1_1 &pinctrl_ecspi1_cs_1>;
+	pinctrl-0 = <&pinctrl_ecspi1_2 &pinctrl_ecspi1_cs_2>;
+	status = "okay";
 
-	flash: m25p80@0 {
-		#address-cells = <1>;
-		#size-cells = <1>;
-		compatible = "st,m25p32";
-		spi-max-frequency = <20000000>;
-		reg = <0>;
-	};
+    touch: ads7846@0 {
+        #address-cells = <1>;
+        #size-cells = <1>;
+        compatible = "ti,ads7846";
+        interrupt-parent = <&gpio3>;
+        interrupts = <24 2>;
+        spi-max-frequency = <1500000>;
+        reg = <0>;
+
+        ti,settle-delay-usec = /bits/ 16 <150>;
+        ti,keep-vref-on = /bits/ 16 <1>;
+        ti,swap-xy = /bits/ 16 <1>;
+		ti,x-min = /bits/ 16 <0>;
+		ti,x-max = /bits/ 16 <4095>;
+		ti,y-min = /bits/ 16 <0>;
+		ti,y-max = /bits/ 16 <4095>;
+		ti,debounce-rep = /bits/ 16 <1>;
+		ti,debounce-tol = /bits/ 16 <5>;
+		ti,debounce-max = /bits/ 16 <10>;
+		linux,wakeup;
+		pendown-gpio = <&gpio3 24 GPIO_ACTIVE_LOW>;
+    };
 };
 
 &fec {
@@ -379,11 +405,12 @@
 				/* sdhc3 */
 				MX6QDL_PAD_SD3_DAT4__GPIO7_IO01 0x80000000
 				MX6QDL_PAD_SD3_DAT5__GPIO7_IO00 0x80000000
+				/* ads7846 */
+				MX6QDL_PAD_EIM_D24__GPIO3_IO24 0x80000000
+				MX6QDL_PAD_EIM_D25__GPIO3_IO25 0x80000000	
 				MX6QDL_PAD_EIM_A24__GPIO5_IO04   0x80000000
 				MX6QDL_PAD_EIM_EB0__GPIO2_IO28   0x80000000
 				MX6QDL_PAD_EIM_EB1__GPIO2_IO29	0x80000000
-				MX6QDL_PAD_DISP0_DAT23__GPIO5_IO17 0x80000000
-				MX6QDL_PAD_DISP0_DAT20__GPIO5_IO14 0x80000000
 				MX6QDL_PAD_CSI0_DATA_EN__GPIO5_IO20 0x17059
 				MX6QDL_PAD_GPIO_1__GPIO1_IO01 0x17059
 				MX6QDL_PAD_GPIO_0__CCM_CLKO1    0x130b0

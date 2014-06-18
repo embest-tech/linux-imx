@@ -1078,6 +1078,12 @@
 			>;
 		};
 
+        pinctrl_ecspi1_cs_2: ecspi1_cs_grp-2 {
+            fsl,pins = <
+                MX6QDL_PAD_KEY_ROW1__GPIO4_IO09 0x80000000
+            >;
+        };
+
 		pinctrl_ecspi1_1: ecspi1grp-1 {
 			fsl,pins = <
 				MX6QDL_PAD_EIM_D17__ECSPI1_MISO 0x100b1
