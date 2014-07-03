@@ -122,8 +122,8 @@
 			regulator-name = "usb_otg_vbus";
 			regulator-min-microvolt = <5000000>;
 			regulator-max-microvolt = <5000000>;
-			gpio = <&gpio3 22 GPIO_ACTIVE_LOW>;
-			enable-active-high;
+			gpio = <&gpio3 22 0>;
+			/*enable-active-high;*/
 		};
 
         reg_2p5v: 2p5v {
@@ -413,6 +413,8 @@
 				/* sdhc3 */
 				MX6QDL_PAD_SD3_DAT4__GPIO7_IO01 0x80000000
 				MX6QDL_PAD_SD3_DAT5__GPIO7_IO00 0x80000000
+				/* usb otg */
+				MX6QDL_PAD_EIM_D22__GPIO3_IO22 0x80000000
 				/* ads7846 */
 				MX6QDL_PAD_EIM_D24__GPIO3_IO24 0x80000000
 				MX6QDL_PAD_EIM_D25__GPIO3_IO25 0x80000000	
