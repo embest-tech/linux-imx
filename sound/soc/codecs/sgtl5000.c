@@ -602,7 +602,7 @@ static const struct snd_kcontrol_new sgtl5000_snd_controls[] = {
 			5, 1, 0),
 
 	SOC_SINGLE_TLV("Mic Volume", SGTL5000_CHIP_MIC_CTRL,
-			0, 4, 0, mic_gain_tlv),
+			0, 3, 0, mic_gain_tlv),
 
 	/* Bass Enhance enable */
 	SOC_SINGLE("Bass Enable", SGTL5000_DAP_BASS_ENHANCE,
@@ -1591,7 +1591,7 @@ static int sgtl5000_probe(struct snd_soc_codec *codec)
 				SGTL5000_SMALL_POP);
 
 	/* disable short cut detector */
-	snd_soc_write(codec, SGTL5000_CHIP_SHORT_CTRL, 0);
+	snd_soc_write(codec, SGTL5000_CHIP_SHORT_CTRL, 0x5);	//embest
 
 	/*
 	 * set i2s as default input of sound switch
@@ -1614,7 +1614,7 @@ static int sgtl5000_probe(struct snd_soc_codec *codec)
 			SGTL5000_HP_ZCD_EN |
 			SGTL5000_ADC_ZCD_EN);
 
-	snd_soc_write(codec, SGTL5000_CHIP_MIC_CTRL, 0);
+	snd_soc_write(codec, SGTL5000_CHIP_MIC_CTRL, 0x2);	//embest
 
 	snd_soc_write(codec, SGTL5000_CHIP_DAC_VOL, 0x6060);
 	snd_soc_write(codec, SGTL5000_CHIP_ANA_ADC_CTRL,
