@@ -30,7 +30,7 @@
 #include <linux/gpio.h>
 #include <linux/spi/spi.h>
 #include <linux/spi/ads7846.h>
-#include <linux/regulator/consumer.h>
+//#include <linux/regulator/consumer.h>
 #include <asm/irq.h>
 
 /*
@@ -95,7 +95,7 @@ struct ads7846 {
 	char			name[32];
 
 	struct spi_device	*spi;
-	struct regulator	*reg;
+//	struct regulator	*reg;
 
 #if defined(CONFIG_HWMON) || defined(CONFIG_HWMON_MODULE)
 	struct attribute_group	*attr_group;
@@ -197,6 +197,49 @@ struct ads7846 {
 #define	REF_ON	(READ_12BIT_DFR(x, 1, 1))
 #define	REF_OFF	(READ_12BIT_DFR(y, 0, 0))
 
+static int ads_cal[9];
+#if 0
+module_param_array_named(calibration, ads_cal, int, NULL, 0644);
+MODULE_PARM_DESC(calibrate, "calibration data");
+#else
+static ssize_t calibration_show(struct device *dev,
+                                     struct device_attribute *attr, char *buf)
+{
+
+	
+        return sprintf(buf, "%d,%d,%d,%d,%d,%d,%d,%d,%d\n", 
+		ads_cal[0], ads_cal[1], ads_cal[2], ads_cal[3], ads_cal[4], 
+			ads_cal[5], ads_cal[6], ads_cal[7], ads_cal[8]);
+}
+
+static ssize_t calibration_store(struct device *dev,
+                                     struct device_attribute *attr,
+                                     const char *buf, size_t count)
+{
+        struct ads7846 *ts = dev_get_drvdata(dev);
+	struct input_dev *input_dev = ts->input;
+	struct spi_device *spi = to_spi_device(dev);
+	struct ads7846_platform_data *pdata = spi->dev.platform_data;
+
+	sscanf(buf, "%d,%d,%d,%d,%d,%d,%d,%d,%d\n", 
+		&ads_cal[0], &ads_cal[1], &ads_cal[2], &ads_cal[3], &ads_cal[4], 
+			&ads_cal[5], &ads_cal[6], &ads_cal[7], &ads_cal[8]);
+
+        input_set_abs_params(input_dev, ABS_X,
+                        pdata->x_min ? : 0,
+                        ads_cal[7] ? : MAX_12BIT,
+                        0, 0);
+        input_set_abs_params(input_dev, ABS_Y,
+                        pdata->y_min ? : 0,
+                        ads_cal[8] ? : MAX_12BIT,
+                        0, 0);
+
+        return count;
+}
+#endif
+
+static DEVICE_ATTR(calibration, 0664, calibration_show, calibration_store);
+
 /* Must be called with ts->lock held */
 static void ads7846_stop(struct ads7846 *ts)
 {
@@ -224,7 +267,7 @@ static void ads7846_restart(struct ads7846 *ts)
 static void __ads7846_disable(struct ads7846 *ts)
 {
 	ads7846_stop(ts);
-	regulator_disable(ts->reg);
+//	regulator_disable(ts->reg);
 
 	/*
 	 * We know the chip's in low power mode since we always
@@ -235,7 +278,7 @@ static void __ads7846_disable(struct ads7846 *ts)
 /* Must be called with ts->lock held */
 static void __ads7846_enable(struct ads7846 *ts)
 {
-	regulator_enable(ts->reg);
+//	regulator_enable(ts->reg);
 	ads7846_restart(ts);
 }
 
@@ -619,6 +662,7 @@ static DEVICE_ATTR(disable, 0664, ads7846_disable_show, ads7846_disable_store);
 static struct attribute *ads784x_attributes[] = {
 	&dev_attr_pen_down.attr,
 	&dev_attr_disable.attr,
+	&dev_attr_calibration.attr,
 	NULL,
 };
 
@@ -699,7 +743,7 @@ static int ads7846_get_value(struct ads7846 *ts, struct spi_message *m)
 		 * adjust:  on-wire is a must-ignore bit, a BE12 value, then
 		 * padding; built from two 8 bit values written msb-first.
 		 */
-		return be16_to_cpup((__be16 *)t->rx_buf) >> 3;
+		return be16_to_cpup((__be16 *)t->rx_buf) >> /*3*/4;	//embest
 	}
 }
 
@@ -770,6 +814,7 @@ static void ads7846_report_state(struct ads7846 *ts)
 	struct ads7846_packet *packet = ts->packet;
 	unsigned int Rt;
 	u16 x, y, z1, z2;
+	int x_abs, y_abs;
 
 	/*
 	 * ads7846_get_value() does in-place conversion (including byte swap)
@@ -854,8 +899,20 @@ static void ads7846_report_state(struct ads7846 *ts)
 			dev_vdbg(&ts->spi->dev, "DOWN\n");
 		}
 
-		input_report_abs(input, ABS_X, x);
-		input_report_abs(input, ABS_Y, y);
+		if (ads_cal[6] == 0) {
+			x_abs = x;
+			y_abs = y;
+		} else {
+                	x_abs = (ads_cal[0]*(int)x + ads_cal[1]*(int)y + ads_cal[2])/ads_cal[6];
+			if(x_abs < 0)
+				x_abs = 0;
+                	y_abs = (ads_cal[3]*(int)x + ads_cal[4]*(int)y + ads_cal[5])/ads_cal[6];
+			if(y_abs < 0)
+				y_abs = 0;
+		}
+
+		input_report_abs(input, ABS_X, x_abs);
+		input_report_abs(input, ABS_Y, y_abs);
 		input_report_abs(input, ABS_PRESSURE, ts->pressure_max - Rt);
 
 		input_sync(input);
@@ -868,8 +925,7 @@ static irqreturn_t ads7846_hard_irq(int irq, void *handle)
 	struct ads7846 *ts = handle;
 
 	return get_pendown_state(ts) ? IRQ_WAKE_THREAD : IRQ_HANDLED;
-}
-
+}	
 
 static irqreturn_t ads7846_irq(int irq, void *handle)
 {
@@ -1203,6 +1259,8 @@ static int __devinit ads7846_probe(struct spi_device *spi)
 	unsigned long irq_flags;
 	int err;
 
+	printk("----ads7846_probe\n");
+
 	if (!spi->irq) {
 		dev_dbg(&spi->dev, "no IRQ?\n");
 		return -ENODEV;
@@ -1285,7 +1343,7 @@ static int __devinit ads7846_probe(struct spi_device *spi)
 	ts->wait_for_sync = pdata->wait_for_sync ? : null_wait_for_sync;
 
 	snprintf(ts->phys, sizeof(ts->phys), "%s/input0", dev_name(&spi->dev));
-	snprintf(ts->name, sizeof(ts->name), "ADS%d Touchscreen", ts->model);
+	snprintf(ts->name, sizeof(ts->name), "ads%d", ts->model);
 
 	input_dev->name = ts->name;
 	input_dev->phys = ts->phys;
@@ -1293,6 +1351,7 @@ static int __devinit ads7846_probe(struct spi_device *spi)
 
 	input_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
 	input_dev->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);
+
 	input_set_abs_params(input_dev, ABS_X,
 			pdata->x_min ? : 0,
 			pdata->x_max ? : MAX_12BIT,
@@ -1301,11 +1360,13 @@ static int __devinit ads7846_probe(struct spi_device *spi)
 			pdata->y_min ? : 0,
 			pdata->y_max ? : MAX_12BIT,
 			0, 0);
+
 	input_set_abs_params(input_dev, ABS_PRESSURE,
 			pdata->pressure_min, pdata->pressure_max, 0, 0);
 
 	ads7846_setup_spi_msg(ts, pdata);
 
+#if 0
 	ts->reg = regulator_get(&spi->dev, "vcc");
 	if (IS_ERR(ts->reg)) {
 		err = PTR_ERR(ts->reg);
@@ -1318,11 +1379,11 @@ static int __devinit ads7846_probe(struct spi_device *spi)
 		dev_err(&spi->dev, "unable to enable regulator: %d\n", err);
 		goto err_put_regulator;
 	}
-
+#endif
 	irq_flags = pdata->irq_flags ? : IRQF_TRIGGER_FALLING;
 	irq_flags |= IRQF_ONESHOT;
 
-	err = request_threaded_irq(spi->irq, ads7846_hard_irq, ads7846_irq,
+	err = request_threaded_irq(spi->irq, /*ads7846_hard_irq*/NULL, ads7846_irq,
 				   irq_flags, spi->dev.driver->name, ts);
 	if (err && !pdata->irq_flags) {
 		dev_info(&spi->dev,
@@ -1372,9 +1433,9 @@ static int __devinit ads7846_probe(struct spi_device *spi)
  err_free_irq:
 	free_irq(spi->irq, ts);
  err_disable_regulator:
-	regulator_disable(ts->reg);
+//	regulator_disable(ts->reg);
  err_put_regulator:
-	regulator_put(ts->reg);
+//	regulator_put(ts->reg);
  err_free_gpio:
 	if (!ts->get_pendown_state)
 		gpio_free(ts->gpio_pendown);
@@ -1403,8 +1464,8 @@ static int __devexit ads7846_remove(struct spi_device *spi)
 
 	ads784x_hwmon_unregister(spi, ts);
 
-	regulator_disable(ts->reg);
-	regulator_put(ts->reg);
+//	regulator_disable(ts->reg);
+//	regulator_put(ts->reg);
 
 	if (!ts->get_pendown_state) {
 		/*
