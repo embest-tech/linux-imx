@@ -942,7 +942,6 @@ static int ioctl_s_parm(struct v4l2_int_device *s, struct v4l2_streamparm *a)
 
 static int ioctl_try_fmt_cap(struct v4l2_int_device *s, struct v4l2_format *f)
 {
-	struct sensor_data *sensor = s->priv;
 
 	return 0;	
 }
@@ -1036,7 +1035,6 @@ static int ioctl_g_ctrl(struct v4l2_int_device *s, struct v4l2_control *vc)
 static int ioctl_s_ctrl(struct v4l2_int_device *s, struct v4l2_control *vc)
 {
 	int retval = 0;
-	struct sensor_data *sensor = s->priv;
 
 	pr_debug("In ov2656:ioctl_s_ctrl %d\n",
 		 vc->id);
@@ -1170,7 +1168,6 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 	register u8 Val = 0;
 	u8 RegVal = 0;
 	int retval = 0;
-	u8 pidh = 0, pidl = 0;
 
 	struct sensor_data *sensor = s->priv;
 	u32 tgt_xclk;	/* target xclk */
@@ -1187,20 +1184,8 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 	tgt_xclk = max(tgt_xclk, (u32)OV2656_XCLK_MIN);
 	ov2656_data.mclk = tgt_xclk;
 
-	printk("----Setting mclk to %d MHz\n", tgt_xclk / 1000000);
+	pr_debug("----Setting mclk to %d MHz\n", tgt_xclk / 1000000);
 	set_mclk_rate(&ov2656_data.mclk, ov2656_data.csi);
-
-	/* add by embest */
-	retval = ov2656_read_reg(OV2656_PIDH, &pidh);
-	if (retval < 0)
-		goto err;
-
-	retval = ov2656_read_reg(OV2656_PIDL, &pidl);
-	if (retval < 0)
-		goto err;
-
-	printk("----pidh= 0x%x, pidl= 0x%x\n", pidh, pidl);
-	/* end add */
 
 	/* Default camera frame rate is set in probe */
 	tgt_fps = sensor->streamcap.timeperframe.denominator /
@@ -1310,8 +1295,7 @@ static int ov2656_probe(struct i2c_client *client,
 {
 	int retval;
 	struct fsl_mxc_camera_platform_data *plat_data = client->dev.platform_data;
-
-	printk("----ov2656_probe\n");
+	u8 chip_id_high = 0, chip_id_low = 0;
 
 	/* Set initial values for the sensor struct. */
 	memset(&ov2656_data, 0, sizeof(ov2656_data));
@@ -1335,11 +1319,35 @@ static int ov2656_probe(struct i2c_client *client,
 
 	camera_plat = plat_data;
 
+    /* Make sure power on */
+    if (camera_plat->pwdn)
+    	camera_plat->pwdn(0);
+
+    /* add by embest */
+    retval = ov2656_read_reg(OV2656_PIDH, &chip_id_high);
+    if (retval < 0 || chip_id_high != 0x26) {
+        pr_warning("camera ov2656 is not found\n");
+        retval = -ENODEV;
+        goto err;
+    }
+
+    retval = ov2656_read_reg(OV2656_PIDL, &chip_id_low);
+    if (retval < 0 || chip_id_low != 0x56) {
+        pr_warning("camera ov2656 is not found\n");
+        retval = -ENODEV;
+        goto err;
+    }
+
+	pr_info("camera ov2656 is found\n");
+    /* end add */
+
+
 	ov2656_int_device.priv = &ov2656_data;
 	retval = v4l2_int_device_register(&ov2656_int_device);
 
-	printk("----v4l2_int_device_register %s\n", retval ? "fail" : "success");	
+//	printk("----v4l2_int_device_register %s\n", retval ? "fail" : "success");	
 
+err:
 	return retval;
 }
 

@@ -455,6 +455,10 @@ static struct i2c_board_info mxc_i2c3_board_info[] __initdata = {
                 .platform_data = (void *)&camera_data,
         },
         {
+                I2C_BOARD_INFO("ov5640", 0x3c),
+                .platform_data = (void *)&camera_data,
+        },
+        {
                 I2C_BOARD_INFO("ch7033", 0x76),
         },
 };
