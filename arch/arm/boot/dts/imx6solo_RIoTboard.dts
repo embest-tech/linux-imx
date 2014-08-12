@@ -394,6 +394,42 @@
 		compatible = "chrontel,ch7033";
 		reg = <0x76>;
 	};	
+
+    ov2656: ov2656@30 {
+        compatible = "ovti,ov2656";
+        reg = <0x30>;
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_ipu1_2>;
+        clocks = <&clks 201>;
+        clock-names = "csi_mclk";
+        DOVDD-supply = <&vgen4_reg>; /* 1.8v */
+        AVDD-supply = <&vgen3_reg>;  /* 2.8v, on rev C board is VGEN3,
+                        on rev B board is VGEN5 */
+        DVDD-supply = <&vgen2_reg>;  /* 1.5v*/
+        pwn-gpios = <&gpio3 20 GPIO_ACTIVE_HIGH>;   /* active high */
+        rst-gpios = <&gpio3 19 GPIO_ACTIVE_LOW>;   /* active low */
+        csi_id = <0>;
+        mclk = <24000000>;
+        mclk_source = <0>;
+    };
+
+    ov564x: ov564x@3c {
+        compatible = "ovti,ov564x";
+        reg = <0x3c>;
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_ipu1_2>;
+        clocks = <&clks 201>;
+        clock-names = "csi_mclk";
+        DOVDD-supply = <&vgen4_reg>; /* 1.8v */
+        AVDD-supply = <&vgen3_reg>;  /* 2.8v, on rev C board is VGEN3,
+                        on rev B board is VGEN5 */
+        DVDD-supply = <&vgen2_reg>;  /* 1.5v*/
+        pwn-gpios = <&gpio3 20 GPIO_ACTIVE_HIGH>;   /* active high */
+        rst-gpios = <&gpio3 19 GPIO_ACTIVE_LOW>;   /* active low */
+        csi_id = <0>;
+        mclk = <24000000>;
+        mclk_source = <0>;
+    };
 };
 
 &iomuxc {
@@ -413,6 +449,9 @@
 				/* sdhc3 */
 				MX6QDL_PAD_SD3_DAT4__GPIO7_IO01 0x80000000
 				MX6QDL_PAD_SD3_DAT5__GPIO7_IO00 0x80000000
+				/* csi */
+				MX6QDL_PAD_EIM_D19__GPIO3_IO19 0x80000000
+				MX6QDL_PAD_EIM_D20__GPIO3_IO20 0x80000000		
 				/* usb otg */
 				MX6QDL_PAD_EIM_D22__GPIO3_IO22 0x80000000
 				/* ads7846 */
