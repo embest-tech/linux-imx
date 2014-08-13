@@ -500,7 +500,7 @@ static s32 ov2656_read_reg(u16 reg, u8 *val)
 }
 
 static int ov2656_change_mode(enum ov2656_frame_rate frame_rate,
-		enum ov2656_mode new_mode,  enum ov2656_mode orig_mode)
+		enum ov2656_mode mode)
 {
 	struct reg_value *pModeSetting = NULL;
 	s32 i = 0;
@@ -512,25 +512,16 @@ static int ov2656_change_mode(enum ov2656_frame_rate frame_rate,
 	u8 RegVal = 0;
 	int retval = 0;
 
-	if (new_mode > ov2656_mode_MAX || new_mode < ov2656_mode_MIN) {
+	if (mode > ov2656_mode_MAX || mode < ov2656_mode_MIN) {
 		pr_err("Wrong ov2656 mode detected!\n");
 		return -1;
 	}
 
-	if (new_mode == ov2656_mode_UXGA_1600_1200 && orig_mode == ov2656_mode_VGA_640_480) {
-		pModeSetting = ov2656_setting_UXGA_1600_1200;
-		iModeSettingArySize = ARRAY_SIZE(ov2656_setting_UXGA_1600_1200);
-		ov2656_data.pix.width = 1600;
-		ov2656_data.pix.height = 1200;
-	} else if (new_mode == ov2656_mode_VGA_640_480 && orig_mode == ov2656_mode_UXGA_1600_1200) {
-		pModeSetting = ov2656_setting_VGA_640_480;
-		iModeSettingArySize = ARRAY_SIZE(ov2656_setting_VGA_640_480);
-		ov2656_data.pix.width = 640;
-		ov2656_data.pix.height = 480;
-	} else {
-		// noting to do
-		return 0;
-	}
+	pModeSetting = ov2656_mode_info_data[mode].init_data_ptr;
+	iModeSettingArySize = ov2656_mode_info_data[mode].init_data_size;
+
+    ov2656_data.pix.width = ov2656_mode_info_data[mode].width;
+    ov2656_data.pix.height = ov2656_mode_info_data[mode].height;
 
 	if (ov2656_data.pix.width == 0 || ov2656_data.pix.height == 0 ||
 			pModeSetting == NULL || iModeSettingArySize == 0)
@@ -563,6 +554,10 @@ static int ov2656_change_mode(enum ov2656_frame_rate frame_rate,
 		if (Delay_ms)
 			msleep(Delay_ms);
 	}
+
+	/* wait for stable */
+	msleep(1500);
+
 err:
 	return retval;
 }
@@ -709,7 +704,7 @@ static int ioctl_s_parm(struct v4l2_int_device *s, struct v4l2_streamparm *a)
 			return -EINVAL;
 		}
 
-		ret =  ov2656_change_mode(frame_rate, a->parm.capture.capturemode, sensor->streamcap.capturemode);
+		ret =  ov2656_change_mode(frame_rate, a->parm.capture.capturemode);
 		sensor->streamcap.timeperframe = *timeperframe;
 		sensor->streamcap.capturemode = (u32)a->parm.capture.capturemode;
 
