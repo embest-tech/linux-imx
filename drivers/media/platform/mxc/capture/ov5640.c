@@ -1279,6 +1279,7 @@ static int ov5640_change_mode(enum ov5640_frame_rate frame_rate,
 			mode == ov5640_mode_QSXGA_2592_1944) {
 		/* change to scaling mode go through exposure calucation
 		 * image size above 1280 * 960 is scaling mode */
+		frame_rate = ov5640_15_fps;	//embest
 		retval = ov5640_change_mode_exposure_calc(frame_rate, mode);
 	} else {
 		/* change back to subsampling modem download firmware directly
