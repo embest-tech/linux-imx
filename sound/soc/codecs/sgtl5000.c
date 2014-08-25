@@ -758,6 +758,10 @@ static int ldo_regulator_enable(struct regulator_dev *dev)
 	snd_soc_update_bits(codec, SGTL5000_CHIP_LINREG_CTRL,
 				SGTL5000_LINREG_VDDD_MASK, reg);
 
+        snd_soc_update_bits(codec, SGTL5000_CHIP_ANA_POWER,
+                                SGTL5000_LINREG_SIMPLE_POWERUP,
+                                0);
+
 	snd_soc_update_bits(codec, SGTL5000_CHIP_ANA_POWER,
 				SGTL5000_LINEREG_D_POWERUP,
 				SGTL5000_LINEREG_D_POWERUP);
