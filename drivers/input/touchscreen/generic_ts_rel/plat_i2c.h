@@ -64,6 +64,10 @@
 #define PLATFORM_RIoTboard_RST_PIN		29
 #define PLATFORM_RIoTboard_IRQ_PIN		174
 
+#define PLATFORM_SBC9000_PWR_PIN		0
+#define PLATFORM_SBC9000_RST_PIN		29
+#define PLATFORM_SBC9000_IRQ_PIN		174
+
 // ****************************************************************************
 // Types
 // ****************************************************************************

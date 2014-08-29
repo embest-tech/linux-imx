@@ -22,6 +22,7 @@
 // Includes
 // ****************************************************************************
 #include <linux/slab.h>
+#include <linux/of.h>
 #include <generated/mach-types.h>
 #include "core_i2c.h"
 #include "plat_i2c.h"
@@ -102,6 +103,12 @@ void platform_i2c_get_cfg(struct struct_platform_i2c_var *platform_i2c_data)
 	platform_i2c_data->pwr = PLATFORM_RIoTboard_PWR_PIN;
 	platform_i2c_data->rst = PLATFORM_RIoTboard_RST_PIN;
 	platform_i2c_data->ss = PLATFORM_RIoTboard_IRQ_PIN;
+
+        if (of_machine_is_compatible("fsl,imx6q-sbc9000")) {
+        	platform_i2c_data->pwr = PLATFORM_SBC9000_PWR_PIN;
+        	platform_i2c_data->rst = PLATFORM_SBC9000_RST_PIN;
+        	platform_i2c_data->ss = PLATFORM_SBC9000_IRQ_PIN;
+	}
 
 	/* IRQ config*/
 	platform_i2c_data->irq = gpio_to_irq(platform_i2c_data->ss);

@@ -176,6 +176,7 @@ static int ar8031_phy_fixup(struct phy_device *dev)
 }
 
 #define PHY_ID_AR8031	0x004dd074
+#define PHY_ID_AR8035   0x004dd072
 
 static void __init imx6q_enet_phy_init(void)
 {
@@ -185,6 +186,8 @@ static void __init imx6q_enet_phy_init(void)
 		phy_register_fixup_for_uid(PHY_ID_KSZ9031, MICREL_PHY_ID_MASK,
 				ksz9031rn_phy_fixup);
 		phy_register_fixup_for_uid(PHY_ID_AR8031, 0xffffffff,
+				ar8031_phy_fixup);
+		phy_register_fixup_for_uid(PHY_ID_AR8035, 0xffffffff,
 				ar8031_phy_fixup);
 	}
 }
