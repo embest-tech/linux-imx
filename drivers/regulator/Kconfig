@@ -526,5 +526,12 @@ config REGULATOR_AS3711
 	  This driver provides support for the voltage regulators on the
 	  AS3711 PMIC
 
+config REGULATOR_BD71805
+    tristate "RoHM BD71805MWV Power Regulator"
+    depends on MFD_BD71805
+    help
+      This driver supports BD71805MWV voltage regulator chips.
+
+
 endif
 
