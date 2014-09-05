@@ -376,6 +376,12 @@ config IMX6_USB_CHARGER
 	help
 	  Say Y to enable Freescale imx6 USB Charger Detect.
 
+config BD71805_POWER
+        tristate "ROHM BD71805MWV Charger for Battery and Adapter Power"
+        depends on MFD_BD71805
+        help
+          Say Y to enable support for the BD71805MWV charger.
+
 source "drivers/power/reset/Kconfig"
 
 endif # POWER_SUPPLY
