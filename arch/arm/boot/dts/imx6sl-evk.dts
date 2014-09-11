@@ -125,6 +125,39 @@
 		reset-delay-us = <100000>;
 		#reset-cells = <0>;
 	};
+
+	regulator-virtuals {
+		compatible = "simple-bus";
+
+		virt-buck1 {
+			compatible = "regulator-virtual";
+			virtual-supply = "buck1";
+		};
+		virt-buck2 {
+			compatible = "regulator-virtual";
+			virtual-supply = "buck2";
+		};
+		virt-buck3 {
+			compatible = "regulator-virtual";
+			virtual-supply = "buck3";
+		};
+		virt-buck4 {
+			compatible = "regulator-virtual";
+			virtual-supply = "buck4";
+		};
+		virt-ldo1 {
+			compatible = "regulator-virtual";
+			virtual-supply = "ldo1";
+		};
+		virt-ldo2 {
+			compatible = "regulator-virtual";
+			virtual-supply = "ldo2";
+		};
+		virt-ldo3 {
+			compatible = "regulator-virtual";
+			virtual-supply = "ldo3";
+		};
+	};
 };
 
 &audmux {
@@ -214,6 +247,7 @@
 				regulator-max-microvolt = <2000000>;
 				regulator-boot-on;
 				regulator-always-on;
+				regulator-ramp-delay = <6250>;
 			};
 
 			buck2_reg: regulator@1 {
@@ -223,6 +257,7 @@
 				regulator-max-microvolt = <2000000>;
 				regulator-boot-on;
 				regulator-always-on;
+				regulator-ramp-delay = <6250>;
 			};
 
 			buck3_reg: regulator@2 {

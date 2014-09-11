@@ -388,6 +388,7 @@ static struct regulator_ops bd71805_ops = {
 	.get_voltage		= bd71805_get_voltage,
 	.set_voltage_sel	= bd71805_set_voltage,
 	.list_voltage		= bd71805_list_voltage,
+	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
 };
 
 #ifdef CONFIG_OF
