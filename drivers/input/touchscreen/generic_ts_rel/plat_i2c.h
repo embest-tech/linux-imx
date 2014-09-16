@@ -69,6 +69,11 @@
 #define PLATFORM_RIoTboard_RST_PIN                    IMX_GPIO_NR(1, 29)
 #define PLATFORM_RIoTboard_IRQ_PIN                    IMX_GPIO_NR(6, 14)
 
+/* sbc9000 config */
+#define PLATFORM_SBC9000_PWR_PIN                      0//
+#define PLATFORM_SBC9000_RST_PIN                      IMX_GPIO_NR(1, 29)
+#define PLATFORM_SBC9000_IRQ_PIN                      IMX_GPIO_NR(6, 14)
+
 // ****************************************************************************
 // Types
 // ****************************************************************************

@@ -104,9 +104,13 @@ void platform_i2c_get_cfg(struct struct_platform_i2c_var *platform_i2c_data)
        		platform_i2c_data->rst = PLATFORM_SABRELITE_RST_PIN;
         	platform_i2c_data->ss = PLATFORM_SABRELITE_IRQ_PIN;		
 	} else if (machine_is_mx6solo_RIoTboard()) {
-		platform_i2c_data->pwr = PLATFORM_RIoTboard_PWR_PIN;
-		platform_i2c_data->rst = PLATFORM_RIoTboard_RST_PIN;
-		platform_i2c_data->ss = PLATFORM_RIoTboard_IRQ_PIN;
+			platform_i2c_data->pwr = PLATFORM_RIoTboard_PWR_PIN;
+			platform_i2c_data->rst = PLATFORM_RIoTboard_RST_PIN;
+			platform_i2c_data->ss = PLATFORM_RIoTboard_IRQ_PIN;
+	} else if (machine_is_mx6q_sbc9000()) {
+			platform_i2c_data->pwr = PLATFORM_SBC9000_PWR_PIN;
+			platform_i2c_data->rst = PLATFORM_SBC9000_RST_PIN;
+			platform_i2c_data->ss = PLATFORM_SBC9000_IRQ_PIN;
 	}
 
 	/* IRQ config*/

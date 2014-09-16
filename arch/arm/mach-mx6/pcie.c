@@ -34,6 +34,7 @@
 #include <linux/time.h>
 
 #include <mach/pcie.h>
+#include <generated/mach-types.h>
 
 #include <asm/sizes.h>
 #include <asm/signal.h>
@@ -810,14 +811,24 @@ static void card_reset(struct device *dev)
 	/* PCIE RESET */
 	gpio_request(pdata->pcie_rst, "PCIE RESET");
 
+	if (machine_is_mx6q_sbc9000()){ 
+	/* activate PERST_B */
+	gpio_direction_output(pdata->pcie_rst, 1);
+	} else {
 	/* activate PERST_B */
 	gpio_direction_output(pdata->pcie_rst, 0);
+	}
 
 	/* Add one reset to the pcie external device */
 	msleep(100);
 
+	if (machine_is_mx6q_sbc9000()){
 	/* deactive PERST_B */
-	gpio_direction_output(pdata->pcie_rst, 1);
+	gpio_direction_output(pdata->pcie_rst, 0);
+	} else {
+    /* activate PERST_B */
+    gpio_direction_output(pdata->pcie_rst, 1);	
+	}
 }
 
 static void __init add_pcie_port(void __iomem *base, void __iomem *dbi_base,
