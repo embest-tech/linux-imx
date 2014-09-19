@@ -208,14 +208,14 @@ static int bd71805_modify_bits(struct bd71805_pmic *pmic, u8 reg,
 	struct bd71805 *mfd = pmic->mfd;
 	int err, data;
 
-	printk("----bd71805_modify_bits: reg= 0x%x, set_mask= 0x%x, clear_mask= 0x%x\n",
-				reg, set_mask, clear_mask);
+	// dev_info(mfd->dev, "%s() : reg= 0x%x, set_mask= 0x%x, clear_mask= 0x%x\n",
+	// __func__,	reg, set_mask, clear_mask);
 
 	mutex_lock(&pmic->mutex);
 
 	data = bd71805_reg_read(mfd, reg);
 	if (data < 0) {
-		dev_err(pmic->mfd->dev, "Read from reg 0x%x failed\n", reg);
+		dev_err(mfd->dev, "Read from reg 0x%x failed\n", reg);
 		err = data;
 		goto out;
 	}
@@ -224,7 +224,7 @@ static int bd71805_modify_bits(struct bd71805_pmic *pmic, u8 reg,
 	data |= set_mask;
 	err = bd71805_reg_write(mfd, reg, data);
 	if (err)
-		dev_err(pmic->mfd->dev, "Write for reg 0x%x failed\n", reg);
+		dev_err(mfd->dev, "Write for reg 0x%x failed\n", reg);
 
 out:
 	mutex_unlock(&pmic->mutex);
@@ -263,7 +263,7 @@ static int bd71805_enable_ldo(struct regulator_dev *dev)
 	struct bd71805 *mfd = pmic->mfd;
 	int reg, id = rdev_get_id(dev);
 
-	printk("----bd71805_enable_ldo %d\n", id);
+	// dev_info(mfd->dev, "----bd71805_enable_ldo %d\n", id);
 
 	reg = pmic->get_ctrl_reg(id);
 	if (reg < 0)
@@ -287,7 +287,7 @@ static int bd71805_disable_ldo(struct regulator_dev *dev)
 	struct bd71805 *mfd = pmic->mfd;
 	int reg, id = rdev_get_id(dev);
 
-	printk("----bd71805_disable_ldo %d\n", id);
+	// dev_info(mfd->dev, "----bd71805_disable_ldo %d\n", id);
 
 	reg = pmic->get_ctrl_reg(id);
 	if (reg < 0)
@@ -543,6 +543,8 @@ static __init int bd71805_probe(struct platform_device *pdev)
 		/* Save regulator for cleanup */
 		pmic->rdev[i] = rdev;
 	}
+
+	bd71805_reg_write(pmic->mfd, BD71805_REG_BUCK1_CONF, BUCK1_RAMPRATE_1P25MV_US);
 	return 0;
 
 err:
