@@ -1348,7 +1348,7 @@ static int sgtl5000_probe(struct snd_soc_codec *codec)
 			SGTL5000_HP_ZCD_EN |
 			SGTL5000_ADC_ZCD_EN);
 
-	snd_soc_write(codec, SGTL5000_CHIP_MIC_CTRL, 0x003);
+	snd_soc_write(codec, SGTL5000_CHIP_MIC_CTRL, 0x001);
 	snd_soc_write(codec, SGTL5000_CHIP_ANA_HP_CTRL, 0x0000);
 
 	/*
