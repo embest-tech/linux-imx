@@ -1,5 +1,5 @@
-/*
- * bd71805.h  --  ROHM BD71805MWV
+/**
+ * @file bd71805.h  ROHM BD71805MWV header file
  *
  * Copyright 2014 Embest Technology Co. Ltd. Inc.
  *
@@ -8,6 +8,7 @@
  *  Free Software Foundation;  either version 2 of the License, or (at your
  *  option) any later version.
  *
+ * @author yanglsh@embest-tech.com
  */
 
 #ifndef __LINUX_MFD_BD71805_H
@@ -93,28 +94,29 @@
 #define BUCK1_RAMPRATE_2P5MV_US			0x2
 #define BUCK1_RAMPRATE_1P25MV_US		0x3
 
-enum {
-	CHG_STATE_SUSPEND		=	0x0,
-	CHG_STATE_TRICKLE_CHARGE,
-	CHG_STATE_PRE_CHARGE,
-	CHG_STATE_FAST_CHARGE,
-	CHG_STATE_TOP_OFF,
-	CHG_STATE_DONE,
+/** @brief charge state enumuration */
+enum CHG_STATE {
+	CHG_STATE_SUSPEND = 0x0,		/**< suspend state */
+	CHG_STATE_TRICKLE_CHARGE,		/**< trickle charge state */
+	CHG_STATE_PRE_CHARGE,			/**< precharge state */
+	CHG_STATE_FAST_CHARGE,			/**< fast charge state */
+	CHG_STATE_TOP_OFF,			/**< top off state */
+	CHG_STATE_DONE,				/**< charge complete */
 };
 
 struct bd71805;
 
 /**
- * struct bd71805_board
- * Board platform data may be used to initialize regulators.
+ * @brief Board platform data may be used to initialize regulators.
  */
 
 struct bd71805_board {
 	struct regulator_init_data *bd71805_pmic_init_data[BD71805_NUM_REGULATOR];
+	/**< regulator initialize data */
 };
 
 /**
- * struct bd71805 - bd71805 sub-driver chip access routines
+ * @brief bd71805 sub-driver chip access routines
  */
 
 struct bd71805 {
@@ -123,15 +125,13 @@ struct bd71805 {
 	struct regmap *regmap;
 	struct mutex io_mutex;
 	unsigned int id;
-	int (*read) (struct bd71805 * bd71805, u8 reg, int size, void *dest);
-	int (*write) (struct bd71805 * bd71805, u8 reg, int size, void *src);
 
 	/* Client devices */
-	struct bd71805_pmic *pmic;
-	struct bd71805_power *power;
+	struct bd71805_pmic *pmic;	/**< client device regulator */
+	struct bd71805_power *power;	/**< client device battery */
 
-	/* Device node parsed board data */
 	struct bd71805_board *of_plat_data;
+	/**< Device node parsed board data */
 };
 
 static inline int bd71805_chip_id(struct bd71805 *bd71805)
@@ -139,6 +139,15 @@ static inline int bd71805_chip_id(struct bd71805 *bd71805)
 	return bd71805->id;
 }
 
+
+/**
+ * @brief bd71805_reg_read
+ * read single register's value of bd71805
+ * @param bd71805 device to read
+ * @param reg register address
+ * @return register value if success
+ *         error number if fail
+ */
 static inline int bd71805_reg_read(struct bd71805 *bd71805, u8 reg)
 {
 	int r, val;
@@ -150,17 +159,46 @@ static inline int bd71805_reg_read(struct bd71805 *bd71805, u8 reg)
 	return val;
 }
 
+/**
+ * @brief bd71805_reg_write
+ * write single register of bd71805
+ * @param bd71805 device to write
+ * @param reg register address
+ * @param val value to write
+ * @retval 0 if success
+ * @retval negative error number if fail
+ */
+
 static inline int bd71805_reg_write(struct bd71805 *bd71805, u8 reg,
 		unsigned int val)
 {
 	return regmap_write(bd71805->regmap, reg, val);
 }
 
+/**
+ * @brief bd71805_set_bits
+ * set bits in one register of bd71805
+ * @param bd71805 device to read
+ * @param reg register address
+ * @param mask mask bits
+ * @retval 0 if success
+ * @retval negative error number if fail
+ */
 static inline int bd71805_set_bits(struct bd71805 *bd71805, u8 reg,
 		u8 mask)
 {
 	return regmap_update_bits(bd71805->regmap, reg, mask, mask);
 }
+
+/**
+ * @brief bd71805_clear_bits
+ * clear bits in one register of bd71805
+ * @param bd71805 device to read
+ * @param reg register address
+ * @param mask mask bits
+ * @retval 0 if success
+ * @retval negative error number if fail
+ */
 
 static inline int bd71805_clear_bits(struct bd71805 *bd71805, u8 reg,
 		u8 mask)
@@ -168,10 +206,21 @@ static inline int bd71805_clear_bits(struct bd71805 *bd71805, u8 reg,
 	return regmap_update_bits(bd71805->regmap, reg, mask, 0);
 }
 
+/**
+ * @brief bd71805_update_bits
+ * update bits in one register of bd71805
+ * @param bd71805 device to read
+ * @param reg register address
+ * @param mask mask bits
+ * @param val value to update
+ * @retval 0 if success
+ * @retval negative error number if fail
+ */
+
 static inline int bd71805_update_bits(struct bd71805 *bd71805, u8 reg,
 					   u8 mask, u8 val)
 {
 	return regmap_update_bits(bd71805->regmap, reg, mask, val);
 }
 
-#endif				/*  __LINUX_MFD_BD71805_H */
+#endif /* __LINUX_MFD_BD71805_H */

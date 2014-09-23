@@ -1,9 +1,9 @@
 /*
- * bd71805.c  --  RoHM bd71805
+ * @file bd71805-regulator.c RoHM bd71805 regulator driver
  *
  * Copyright 2014 Embest Technology Co. Ltd. Inc.
  *
- * Author: Tony Luo <luofc@embedinfo.com>
+ * @author Tony Luo <luofc@embedinfo.com>
  *
  *  This program is free software; you can redistribute it and/or modify it
  *  under  the terms of the GNU General  Public License as published by the
@@ -26,7 +26,7 @@
 #include <linux/regulator/of_regulator.h>
 
 
-/* supported BUCK1 voltages in milivolts */
+/** @brief supported BUCK1 voltages in milivolts */
 static const u16 BUCK1_VSEL_table[] = {
 	800, 825, 850, 875, 900, 925, 950, 975, 
 	1000, 1025, 1050, 1075, 1100, 1125, 1150, 1175,
@@ -37,7 +37,7 @@ static const u16 BUCK1_VSEL_table[] = {
 	2000,
 };
 
-/* supported BUCK2 voltages in milivolts */
+/** @brief supported BUCK2 voltages in milivolts */
 static const u16 BUCK2_VSEL_table[] = {
 	800, 825, 850, 875, 900, 925, 950, 975,
 	1000, 1025, 1050, 1075, 1100, 1125, 1150, 1175,
@@ -48,13 +48,13 @@ static const u16 BUCK2_VSEL_table[] = {
 	2000,
 };
 
-/* supported BUCK3 voltages in milivolts */
+/** @brief supported BUCK3 voltages in milivolts */
 static const u16 BUCK3_VSEL_table[] = {
 	2600, 2650, 2700, 2750, 2800, 2850, 2900, 2950,
 	3000, 3050, 3100, 3150, 3200, 3250, 3300, 3350,
 };
 
-/* supported BUCK4 voltages in milivolts */
+/** @brief supported BUCK4 voltages in milivolts */
 static const u16 BUCK4_VSEL_table[] = {
 	1000, 1050, 1100, 1150, 1200, 1250, 1300, 1350,
 	1400, 1450, 1500, 1550, 1600, 1650, 1700, 1750,
@@ -63,7 +63,7 @@ static const u16 BUCK4_VSEL_table[] = {
 	2600, 2650, 2700,
 };
 
-/* supported LDO1 voltages in milivolts */
+/** @brief supported LDO1 voltages in milivolts */
 static const u16 LDO1_VSEL_table[] = {
 	800, 850, 900, 950, 1000, 1050, 1100, 1150,
 	1200, 1250, 1300, 1350, 1400, 1450, 1500, 1550,
@@ -74,7 +74,7 @@ static const u16 LDO1_VSEL_table[] = {
 	3200, 3250, 3300,
 };
 
-/* supported LDO2 voltages in milivolts */
+/** @brief supported LDO2 voltages in milivolts */
 static const u16 LDO2_VSEL_table[] = {
 	800, 850, 900, 950, 1000, 1050, 1100, 1150,
 	1200, 1250, 1300, 1350, 1400, 1450, 1500, 1550,
@@ -85,7 +85,7 @@ static const u16 LDO2_VSEL_table[] = {
 	3200, 3250, 3300,
 };
 
-/* supported LDO2 voltages in milivolts */
+/** @brief supported LDO3 voltages in milivolts */
 static const u16 LDO3_VSEL_table[] = {
 	800, 850, 900, 950, 1000, 1050, 1100, 1150,
 	1200, 1250, 1300, 1350, 1400, 1450, 1500, 1550,
@@ -96,14 +96,16 @@ static const u16 LDO3_VSEL_table[] = {
 	3200, 3250, 3300,
 };
 
+/** @brief regulators initialize parameter type*/
 struct bd71805_info {
-	const char *name;
-	unsigned min_uV;
-	unsigned max_uV;
-	u8 table_len;
-	const u16 *table;
+	const char *name;	///< regulator name
+	unsigned min_uV;	///< minimum output volatage
+	unsigned max_uV;	///< maximum output voltage
+	u8 table_len;		///< table length
+	const u16 *table;	///< voltage tables
 };
 
+/** @brief regulators parameters */
 static struct bd71805_info bd71805_regs[] = {
 	{
 		.name = "buck1",
@@ -166,16 +168,21 @@ static struct bd71805_info bd71805_regs[] = {
 	},
 };
 
+/** @brief bd71805 regulator type */
 struct bd71805_pmic {
-	struct regulator_desc desc[BD71805_NUM_REGULATOR];
-	struct bd71805 *mfd;
-	struct regulator_dev *rdev[BD71805_NUM_REGULATOR];
-	struct bd71805_info *info[BD71805_NUM_REGULATOR];
+	struct regulator_desc desc[BD71805_NUM_REGULATOR];	/**< regulator description to system */
+	struct bd71805 *mfd;					/**< parent device */
+	struct regulator_dev *rdev[BD71805_NUM_REGULATOR];	/**< regulator device of system */
+	struct bd71805_info *info[BD71805_NUM_REGULATOR];	/**< regulator initialize data */
 	struct mutex mutex;
 	int mode;
-	int  (*get_ctrl_reg)(int);
+	int  (*get_ctrl_reg)(int);				/**< inner function to get ldo register */
 };
 
+/** @brief get register from ldo id
+ * @param id ldo id
+ * @return ldo register address
+ */
 static int bd71805_get_ctrl_register(int id)
 {
 	switch (id) {
@@ -202,6 +209,14 @@ static int bd71805_get_ctrl_register(int id)
 	}
 }
 
+/**@brief modify register bits
+ * @param pmic bd71805 regulator device
+ * @param reg register address
+ * @param set_mask value to set
+ * @param clear_mask value to clear
+ * @retval 0 success
+ * @retval negative error number
+ */
 static int bd71805_modify_bits(struct bd71805_pmic *pmic, u8 reg,
 					u8 set_mask, u8 clear_mask)
 {
@@ -231,6 +246,12 @@ out:
 	return err;
 }
 
+/**@brief query ldo is enabled
+ * @param dev regulator device of system
+ * @retval 0 success
+ * @retval negative error number
+ */
+
 static int bd71805_is_enabled_ldo(struct regulator_dev *dev)
 {
 	struct bd71805_pmic *pmic = rdev_get_drvdata(dev);
@@ -257,6 +278,11 @@ static int bd71805_is_enabled_ldo(struct regulator_dev *dev)
 	}
 }
 
+/**@brief enable specified ldo
+ * @param dev regulator device of system
+ * @retval 0 success
+ * @retval negative error number
+ */
 static int bd71805_enable_ldo(struct regulator_dev *dev)
 {
 	struct bd71805_pmic *pmic = rdev_get_drvdata(dev);
@@ -281,6 +307,11 @@ static int bd71805_enable_ldo(struct regulator_dev *dev)
 	}
 }
 
+/**@brief disable specified ldo
+ * @param dev regulator device of system
+ * @retval 0 success
+ * @retval negative error number
+ */
 static int bd71805_disable_ldo(struct regulator_dev *dev)
 {
 	struct bd71805_pmic *pmic = rdev_get_drvdata(dev);
@@ -305,6 +336,11 @@ static int bd71805_disable_ldo(struct regulator_dev *dev)
 	}
 }
 
+/**@brief get ldo output voltage
+ * @param dev regulator device of system
+ * @return voltage in a unit milli volt.
+ * @retval negative if fail 
+ */
 static int bd71805_get_voltage(struct regulator_dev *dev)
 {
 	struct bd71805_pmic *pmic = rdev_get_drvdata(dev);
@@ -335,6 +371,13 @@ static int bd71805_get_voltage(struct regulator_dev *dev)
 	return voltage;
 }
 
+/**@brief set ldo output voltage
+ * @param dev regulator device of system
+ * @param selector voltage selector (order number in voltages table)
+ * @retval 0 success
+ * @retval negative error number
+ */
+
 static int bd71805_set_voltage(struct regulator_dev *dev, unsigned selector)
 {
 	struct bd71805_pmic *pmic = rdev_get_drvdata(dev);
@@ -357,6 +400,13 @@ static int bd71805_set_voltage(struct regulator_dev *dev, unsigned selector)
 	return bd71805_modify_bits(pmic, reg, selector, VOLT_MASK);
 }
 
+/**@brief get voltage coresspond to selector specified
+ * @param dev regulator device of system
+ * @param selector voltage selector (order number in voltages table)
+ * @return voltage in a unit milli volt.
+ * @retval negative error number
+ */
+
 static int bd71805_list_voltage(struct regulator_dev *dev,
 					unsigned selector)
 {
@@ -374,7 +424,7 @@ static int bd71805_list_voltage(struct regulator_dev *dev,
 	return voltage;
 }
 
-/* Regulator ops */
+/**@brief regulator operrations for ldos */
 static struct regulator_ops bd71805_ops_ldo = {
 	.is_enabled		= bd71805_is_enabled_ldo,
 	.enable			= bd71805_enable_ldo,
@@ -384,6 +434,7 @@ static struct regulator_ops bd71805_ops_ldo = {
 	.list_voltage		= bd71805_list_voltage,
 };
 
+/**@brief regulator operations for oterwise */ 
 static struct regulator_ops bd71805_ops = {
 	.get_voltage		= bd71805_get_voltage,
 	.set_voltage_sel	= bd71805_set_voltage,
@@ -405,6 +456,12 @@ static struct of_regulator_match bd71805_matches[] = {
 	{ .name = "snvs",	.driver_data = (void *) &bd71805_regs[8] },
 };
 
+/**@brief parse bd71805 regulator device tree
+ * @param pdev platform device of bd71805 regulator
+ * @param bd71805_reg_matches return regualtor matches
+ * @retval 0 parse success
+ * @retval NULL parse fail
+ */
 static struct bd71805_board *bd71805_parse_dt_reg_data(
 		struct platform_device *pdev,
 		struct of_regulator_match **bd71805_reg_matches)
@@ -462,6 +519,11 @@ static inline struct bd71805_board *bd71805_parse_dt_reg_data(
 }
 #endif
 
+/**@brief probe bd71805 regulator device
+ @param pdev bd71805 regulator platform device
+ @retval 0 success
+ @retval negative fail
+*/
 static __init int bd71805_probe(struct platform_device *pdev)
 {
 	struct bd71805 *bd71805 = dev_get_drvdata(pdev->dev.parent);
@@ -555,6 +617,10 @@ err:
 	return err;
 }
 
+/**@brief remove bd71805 regulator device
+ @param pdev bd71805 regulator platform device
+ @return 0
+*/
 static int __exit bd71805_remove(struct platform_device *pdev)
 {
 	struct bd71805_pmic *pmic = platform_get_drvdata(pdev);
@@ -576,12 +642,14 @@ static struct platform_driver bd71805_driver = {
 	.remove = bd71805_remove,
 };
 
+/**@brief module initialize function */
 static int __init bd71805_init(void)
 {
 	return platform_driver_register(&bd71805_driver);
 }
 subsys_initcall(bd71805_init);
 
+/**@brief module deinitialize function */
 static void __exit bd71805_cleanup(void)
 {
 	platform_driver_unregister(&bd71805_driver);

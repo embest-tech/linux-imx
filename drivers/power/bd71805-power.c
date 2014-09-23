@@ -1,5 +1,6 @@
 /*
- * ROHM BD71805MWV Charger driver
+ * bd71805-power.c
+ * @file ROHM BD71805MWV Charger driver
  *
  * Copyright 2014 Embest Technology Co. Ltd. Inc.
  *
@@ -20,18 +21,24 @@
 #define JITTER_DEFAULT		50		/* hope 50ms is enough */
 #define JITTER_REPORT_CAP	30000		/* 30 seconds */
 
+/** @brief power deivce */
 struct bd71805_power {
 	struct device *dev;
-	struct bd71805 *mfd;
-	struct power_supply ac;
-	struct power_supply bat;
-	struct delayed_work bd_work;
-	int    reg_index;
-	int    vbus_status;
-	int    bat_status;
-	int    charge_status;
+	struct bd71805 *mfd;			/**< parent for access register */
+	struct power_supply ac;			/**< alternating current power */
+	struct power_supply bat;		/**< battery power */
+	struct delayed_work bd_work;		/**< delayed work for timed work */
+	int    reg_index;			/**< register address saved for sysfs */
+	int    vbus_status;			/**< last vbus status */
+	int    bat_status;			/**< last bat status */
+	int    charge_status;			/**< last charge status */
 };
 
+/** @brief read a register group once
+ *  @param power power device
+ *  @param reg	 register address of lower register
+ *  @return register value
+ */
 static u16 bd71805_reg_read16(struct bd71805_power *power, int reg) {
 	u16 v;
 
@@ -40,6 +47,13 @@ static u16 bd71805_reg_read16(struct bd71805_power *power, int reg) {
 	return v;
 }
 
+/** @brief get property of power supply ac
+ *  @param psy power supply deivce
+ *  @param psp property to get
+ *  @param val property value to return
+ *  @retval 0  success
+ *  @retval negative fail
+ */
 static int bd71805_charger_get_property(struct power_supply *psy,
 					enum power_supply_property psp, union power_supply_propval *val)
 {
@@ -62,6 +76,14 @@ static int bd71805_charger_get_property(struct power_supply *psy,
 
 	return 0;
 }
+
+/** @brief get property of power supply bat
+ *  @param psy power supply deivce
+ *  @param psp property to get
+ *  @param val property value to return
+ *  @retval 0  success
+ *  @retval negative fail
+ */
 
 static int bd71805_battery_get_property(struct power_supply *psy,
 					enum power_supply_property psp, union power_supply_propval *val)
@@ -124,6 +146,13 @@ static int bd71805_battery_get_property(struct power_supply *psy,
 	return 0;
 }
 
+/**@brief timed work function called by system
+ *  read battery capacity,
+ *  sense change of charge status, etc.
+ * @param work work struct
+ * @return  void
+ */
+
 static void bd_work_callback(struct work_struct *work)
 {
 	struct bd71805_power *power;
@@ -165,12 +194,13 @@ static void bd_work_callback(struct work_struct *work)
 	schedule_delayed_work(&power->bd_work, msecs_to_jiffies(JITTER_DEFAULT));
 }
 
-
+/** @brief ac properties */
 static enum power_supply_property bd71805_charger_props[] = {
 	POWER_SUPPLY_PROP_ONLINE,
 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
 };
 
+/** @brief bat properies */
 static enum power_supply_property bd71805_battery_props[] = {
 	POWER_SUPPLY_PROP_STATUS,
 	POWER_SUPPLY_PROP_PRESENT,
@@ -179,7 +209,7 @@ static enum power_supply_property bd71805_battery_props[] = {
 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
 };
 
-/* directly set raw value to chip register, format: 'register value' */
+/** @brief directly set raw value to chip register, format: 'register value' */
 static ssize_t bd71805_sysfs_set_registers(struct device *dev,
 					   struct device_attribute *attr,
 					   const char *buf,
@@ -210,7 +240,7 @@ static ssize_t bd71805_sysfs_set_registers(struct device *dev,
 	return count;
 }
 
-/* print value of chip register, format: 'register=value' */
+/** @brief print value of chip register, format: 'register=value' */
 static ssize_t bd71805_sysfs_print_reg(struct bd71805_power *power,
 				       u8 reg,
 				       char *buf)
@@ -222,7 +252,7 @@ static ssize_t bd71805_sysfs_print_reg(struct bd71805_power *power,
 	return sprintf(buf, "[0x%.2X] = %.2X\n", reg, ret);
 }
 
-/* show all raw values of chip register, format per line: 'register=value' */
+/** @brief show all raw values of chip register, format per line: 'register=value' */
 static ssize_t bd71805_sysfs_show_registers(struct device *dev,
 					    struct device_attribute *attr,
 					    char *buf)
@@ -259,6 +289,11 @@ static const struct attribute_group bd71805_sysfs_attr_group = {
 };
 
 
+/** @brief probe power device 
+ * @param pdev platform deivce of bd71805_power
+ * @retval 0 success
+ * @retval negative fail
+ */
 static int __init bd71805_power_probe(struct platform_device *pdev)
 {
 	struct bd71805 *bd71805 = dev_get_drvdata(pdev->dev.parent);
@@ -339,6 +374,11 @@ static int __init bd71805_power_probe(struct platform_device *pdev)
 	return ret;
 }
 
+/** @brief remove power device
+ * @param pdev platform deivce of bd71805_power
+ * @return 0
+ */
+
 static int __exit bd71805_power_remove(struct platform_device *pdev)
 {
 	struct bd71805_power *power = platform_get_drvdata(pdev);
@@ -363,6 +403,7 @@ static struct platform_driver bd71805_power_driver = {
 	.remove = __exit_p(bd71805_power_remove),
 };
 
+/** @brief module initialize function */
 static int __init bd71805_power_init(void)
 {
 	return platform_driver_probe(&bd71805_power_driver, bd71805_power_probe);
@@ -370,6 +411,7 @@ static int __init bd71805_power_init(void)
 
 module_init(bd71805_power_init);
 
+/** @brief module deinitialize function */
 static void __exit bd71805_power_exit(void)
 {
 	platform_driver_unregister(&bd71805_power_driver);

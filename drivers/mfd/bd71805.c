@@ -1,15 +1,13 @@
 /*
- * bd71805.c  --  RoHM BD71805MWV
- *
- * Copyright 2014 Embest Technology Co. Ltd. Inc.
- *
- * Author: Tony Luo <luofc@embedinfo.com>
- *
+ * @file bd71805.c  --  RoHM BD71805MWV mfd driver
+ * 
  *  This program is free software; you can redistribute it and/or modify it
  *  under  the terms of the GNU General  Public License as published by the
  *  Free Software Foundation;  either version 2 of the License, or (at your
  *  option) any later version.
  *
+ * @author: Tony Luo <luofc@embedinfo.com>
+ * Copyright 2014 Embest Technology Co. Ltd. Inc.
  */
 
 #include <linux/module.h>
@@ -23,6 +21,7 @@
 #include <linux/mfd/core.h>
 #include <linux/mfd/bd71805.h>
 
+/** @brief bd71805 multi function cells */
 static struct mfd_cell bd71805_mfd_cells[] = {
 	{
 		.name = "bd71805-pmic",
@@ -42,7 +41,7 @@ static bool is_volatile_reg(struct device *dev, unsigned int reg)
 	return true;
 }
 
-
+/** @brief regmap configures */
 static const struct regmap_config bd71805_regmap_config = {
 	.reg_bits = 8,
 	.val_bits = 8,
@@ -58,6 +57,12 @@ static struct of_device_id bd71805_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, bd71805_of_match);
 
+
+/** @brief parse device tree data of bd71805
+ *  @param client client object provided by system
+ *  @param chip_id return chip id back to caller
+ *  @return board initialize data
+ */
 static struct bd71805_board *bd71805_parse_dt(struct i2c_client *client,
 						int *chip_id)
 {
@@ -93,6 +98,12 @@ struct bd71805_board *bd71805_parse_dt(struct i2c_client *client,
 }
 #endif
 
+/** @brief probe bd71805 device
+ *  @param i2c client object provided by system
+ *  @param id chip id
+ *  @retval 0 probe success
+ *  @retval negative error number
+ */
 static int bd71805_i2c_probe(struct i2c_client *i2c,
 			    const struct i2c_device_id *id)
 {
@@ -144,6 +155,10 @@ err:
 	return ret;
 }
 
+/** @brief remove bd71805 device
+ *  @param i2c client object provided by system
+ *  @return 0
+ */
 static int bd71805_i2c_remove(struct i2c_client *i2c)
 {
 	struct bd71805 *bd71805 = i2c_get_clientdata(i2c);
