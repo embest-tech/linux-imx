@@ -97,7 +97,7 @@ static int bd71805_battery_get_property(struct power_supply *psy,
 	switch (psp) {
 	case POWER_SUPPLY_PROP_STATUS:
 		r = bd71805_reg_read(power->mfd, BD71805_REG_CHG_STATE);
-		printk("CHG_STATE = 0x%.2X\n", r);
+		// printk("CHG_STATE = 0x%.2X\n", r);
 		switch(r) {
 		case CHG_STATE_SUSPEND:
 			val->intval = POWER_SUPPLY_STATUS_NOT_CHARGING;
@@ -132,7 +132,7 @@ static int bd71805_battery_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY:
 		cap = bd71805_reg_read16(power, BD71805_REG_CC_BATCAP_U);
-		printk("CC_BATCAP = 0x%.4X\n", cap);
+		// printk("CC_BATCAP = 0x%.4X\n", cap);
 		val->intval = cap * 100 / 0x1FFF;
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
@@ -165,7 +165,7 @@ static void bd_work_callback(struct work_struct *work)
 
 	status = bd71805_reg_read(power->mfd, BD71805_REG_VBUS_STAT);
 	if (status != power->vbus_status) {
-		printk("VBUS_STAT CHANGED from 0x%X to 0x%X\n", power->vbus_status, status);
+		// printk("VBUS_STAT CHANGED from 0x%X to 0x%X\n", power->vbus_status, status);
 		power->vbus_status = status;
 		changed = 1;
 	}
@@ -173,14 +173,14 @@ static void bd_work_callback(struct work_struct *work)
 	status = bd71805_reg_read(power->mfd, BD71805_REG_BAT_STAT);
 	status &= ~BAT_DET_DONE;
 	if (status != power->bat_status) {
-		printk("BAT_STAT CHANGED from 0x%X to 0x%X\n", power->bat_status, status);
+		// printk("BAT_STAT CHANGED from 0x%X to 0x%X\n", power->bat_status, status);
 		power->bat_status = status;
 		changed = 1;
 	}
 
 	status = bd71805_reg_read(power->mfd, BD71805_REG_CHG_STATE);
 	if (status != power->charge_status) {
-		printk("CHG_STATE CHANGED from 0x%X to 0x%X\n", power->charge_status, status);
+		// printk("CHG_STATE CHANGED from 0x%X to 0x%X\n", power->charge_status, status);
 		power->charge_status = status;
 		changed = 1;
 	}
