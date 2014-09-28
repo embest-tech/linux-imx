@@ -116,10 +116,9 @@ static int bd71805_battery_get_property(struct power_supply *psy,
 		}
 		break;
 	case POWER_SUPPLY_PROP_PRESENT:
-		do {
-			ret = bd71805_reg_read(power->mfd, BD71805_REG_BAT_STAT);
-		} while (!(ret & BAT_DET_DONE));
-		val->intval = (ret & BAT_DET) >> BAT_DET_OFFSET;
+#define TS_THRESHOLD_VOLT	0xD9
+		ret = bd71805_reg_read(power->mfd, BD71805_REG_VM_VTH);
+		val->intval = (ret > TS_THRESHOLD_VOLT);
 		break;
 	case POWER_SUPPLY_PROP_HEALTH:
 		ret = bd71805_reg_read(power->mfd, BD71805_REG_BAT_STAT);
