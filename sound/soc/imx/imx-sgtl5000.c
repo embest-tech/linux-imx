@@ -269,7 +269,7 @@ static int imx_3stack_sgtl5000_init(struct snd_soc_pcm_runtime *rtd)
 	snd_soc_dapm_add_routes(&codec->dapm, audio_map, ARRAY_SIZE(audio_map));
 
 	snd_soc_dapm_disable_pin(&codec->dapm, "Line In Jack");
-	snd_soc_dapm_disable_pin(&codec->dapm, "Headphone Jack");
+	snd_soc_dapm_enable_pin(&codec->dapm, "Headphone Jack");
 	snd_soc_dapm_enable_pin(&codec->dapm, "Ext Spk");
 	snd_soc_dapm_sync(&codec->dapm);
 
@@ -387,7 +387,8 @@ static int __init imx_sgtl5000_init(void)
 	if (ret)
 		return -ENOMEM;
 
-	if (machine_is_mx35_3ds() || machine_is_mx6q_sabrelite() || machine_is_mx6solo_RIoTboard())
+	if (machine_is_mx35_3ds() || machine_is_mx6q_sabrelite() || machine_is_mx6solo_RIoTboard()
+			|| machine_is_mx6q_sbc9000())
 		imx_sgtl5000_dai[0].codec_name = "sgtl5000.0-000a";
 	else
 		imx_sgtl5000_dai[0].codec_name = "sgtl5000.1-000a";
