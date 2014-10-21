@@ -29,6 +29,9 @@ static struct mfd_cell bd71805_mfd_cells[] = {
 	{
 		.name = "bd71805-power",
 	},
+	{
+		.name = "bd71805-gpo",
+	},
 };
 
 static bool is_volatile_reg(struct device *dev, unsigned int reg)

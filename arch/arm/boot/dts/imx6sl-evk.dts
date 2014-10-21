@@ -236,6 +236,10 @@
 		reg = <0x4b>;
 		compatible = "rohm,bd71805";
 
+		gpo {
+			rohm,mode = <0x70>;	/* 0b0111_0000 all gpos with cmos output mode */
+		};
+
 		regulators {
 			#address-cells = <1>;
 			#size-cells = <0>;

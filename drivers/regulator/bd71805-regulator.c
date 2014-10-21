@@ -96,6 +96,11 @@ static const u16 LDO3_VSEL_table[] = {
 	3200, 3250, 3300,
 };
 
+/** @brief supported snvs voltages in milivolts */
+static const u16 SNVS_VSEL_table[] = {
+	3000,
+};
+
 /** @brief regulators initialize parameter type*/
 struct bd71805_info {
 	const char *name;	///< regulator name
@@ -165,6 +170,8 @@ static struct bd71805_info bd71805_regs[] = {
 		.name = "snvs",
 		.min_uV = 3000000,
 		.max_uV = 3000000,
+		.table_len = ARRAY_SIZE(SNVS_VSEL_table),
+		.table = SNVS_VSEL_table,
 	},
 };
 
@@ -197,13 +204,9 @@ static int bd71805_get_ctrl_register(int id)
 	case BD71805_LDO1:
 	case BD71805_LDO2:
 	case BD71805_LDO3:
-		return BD71805_REG_LDO1_CTRL;
-#if 0
 	case BD71805_VODVREF:
-		return BD71805_REG_VODVREF;
 	case BD71805_VOSNVS:
-		return BD71805_REG_VOSNVS;
-#endif
+		return BD71805_REG_LDO1_CTRL;
 	default:
 		return -EINVAL;
 	}
@@ -217,6 +220,7 @@ static int bd71805_get_ctrl_register(int id)
  * @retval 0 success
  * @retval negative error number
  */
+/*
 static int bd71805_modify_bits(struct bd71805_pmic *pmic, u8 reg,
 					u8 set_mask, u8 clear_mask)
 {
@@ -244,7 +248,7 @@ static int bd71805_modify_bits(struct bd71805_pmic *pmic, u8 reg,
 out:
 	mutex_unlock(&pmic->mutex);
 	return err;
-}
+}*/
 
 /**@brief query ldo is enabled
  * @param dev regulator device of system
@@ -273,6 +277,10 @@ static int bd71805_is_enabled_ldo(struct regulator_dev *dev)
 		return value & LDO2_EN;
 	case BD71805_LDO3:
 		return value & LDO3_EN;
+	case BD71805_VODVREF:
+		return value & DVREF_EN;
+	case BD71805_VOSNVS:
+		return value & VOSNVS_SW_EN;
 	default:
 		return -EINVAL;
 	}
@@ -302,6 +310,10 @@ static int bd71805_enable_ldo(struct regulator_dev *dev)
 		return bd71805_set_bits(mfd, reg, LDO2_EN);
 	case BD71805_LDO3:
 		return bd71805_set_bits(mfd, reg, LDO3_EN);
+	case BD71805_VODVREF:
+		return bd71805_set_bits(mfd, reg, DVREF_EN);
+	case BD71805_VOSNVS:
+		return bd71805_set_bits(mfd, reg, VOSNVS_SW_EN);
 	default:
 		return -EINVAL;
 	}
@@ -331,6 +343,10 @@ static int bd71805_disable_ldo(struct regulator_dev *dev)
 		return bd71805_clear_bits(mfd, reg, LDO2_EN);
 	case BD71805_LDO3:
 		return bd71805_clear_bits(mfd, reg, LDO3_EN);
+	case BD71805_VODVREF:
+		return bd71805_clear_bits(mfd, reg, DVREF_EN);
+	case BD71805_VOSNVS:
+		return bd71805_clear_bits(mfd, reg, VOSNVS_SW_EN);
 	default:
 		return -EINVAL;
 	}
@@ -361,9 +377,16 @@ static int bd71805_get_voltage(struct regulator_dev *dev)
 		break;
 	}
 
-	value = bd71805_reg_read(mfd, reg);
-	if (value < 0)
+	if (id == BD71805_VOSNVS) {
+		value = 0;
+	} else if (id == BD71805_VODVREF){
+		return -EINVAL;
+	} else {
+		value = bd71805_reg_read(mfd, reg);
+	}
+	if (value < 0) {
 		return value;
+	}
 
 	value &= VOLT_MASK;
 	voltage = pmic->info[id]->table[value] * 1000;
@@ -397,7 +420,12 @@ static int bd71805_set_voltage(struct regulator_dev *dev, unsigned selector)
 		break;
 	}
 
-	return bd71805_modify_bits(pmic, reg, selector, VOLT_MASK);
+	if (id == BD71805_VOSNVS || id == BD71805_VODVREF){
+		return -EINVAL;
+	}
+
+	// return bd71805_modify_bits(pmic, reg, selector, VOLT_MASK);
+	return bd71805_update_bits(pmic->mfd, reg, VOLT_MASK, selector);
 }
 
 /**@brief get voltage coresspond to selector specified
@@ -519,6 +547,126 @@ static inline struct bd71805_board *bd71805_parse_dt_reg_data(
 }
 #endif
 
+/** @brief gpo mode constants */
+static const char* gpo_modes[] = {"open_drain", "cmos"};
+
+/** @brief retrive gpo output mode */
+static ssize_t show_mode(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct bd71805_pmic *pmic = dev_get_drvdata(dev);
+	int shift = attr_name(*attr)[3] - '1';
+	int gpo;
+
+	// printk("~~~t~~~ %s\n", attr_name(*attr));
+	gpo = bd71805_reg_read(pmic->mfd, BD71805_REG_GPO);
+	gpo = (gpo & (GPO1_MODE << shift)) != 0;
+
+	return sprintf(buf, "%s\n", gpo_modes[gpo]);
+}
+
+/** @brief set gpo output mode */
+static ssize_t set_mode(struct device *dev, struct device_attribute *attr,
+			const char *buf, size_t count)
+{
+	struct bd71805_pmic *pmic = dev_get_drvdata(dev);
+	int shift = attr_name(*attr)[3] - '1';
+	int gpo, r;
+
+	if (strncmp(buf, gpo_modes[0], strlen(gpo_modes[0])) == 0) {
+		gpo = 0 << shift;
+	} else {
+		gpo = GPO1_MODE << shift;
+	}
+
+	r = bd71805_update_bits(pmic->mfd, BD71805_REG_GPO, GPO1_MODE << shift, gpo);
+	if (r < 0) {
+		return r;
+	}
+	return count;
+}
+
+/** @brief retrive gpo output value */
+static ssize_t show_value(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct bd71805_pmic *pmic = dev_get_drvdata(dev);
+	int shift = attr_name(*attr)[3] - '1';
+	int gpo;
+
+	// printk("~~~t~~~ %s\n", attr_name(*attr));
+	gpo = bd71805_reg_read(pmic->mfd, BD71805_REG_GPO);
+	gpo = (gpo & (GPO1_OUT << shift)) != 0;
+
+	return sprintf(buf, "%d\n", gpo);
+}
+
+/** @brief set gpo output value */
+static ssize_t set_value(struct device *dev, struct device_attribute *attr,
+			const char *buf, size_t count)
+{
+	struct bd71805_pmic *pmic = dev_get_drvdata(dev);
+	int shift = attr_name(*attr)[3] - '1';
+	int gpo, r;
+
+	if (sscanf(buf, "%d", &gpo) < 1) {
+		return -EINVAL;
+	}
+
+	if (gpo != 0) {
+		gpo = GPO1_OUT << shift;
+	}
+	r = bd71805_update_bits(pmic->mfd, BD71805_REG_GPO, GPO1_OUT << shift, gpo);
+	if (r < 0) {
+		return r;
+	}
+	return count;
+}
+
+/** @brief list all supported modes */
+static ssize_t available_modes(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	int i, r;
+
+	r = 0;
+	for (i = 0; i < ARRAY_SIZE(gpo_modes) && r >= 0; i++) {
+		r += sprintf(buf + r, "%s ", gpo_modes[i]);
+	}
+	r += sprintf(buf + r, "\n");
+
+	return r;
+}
+
+/** @brief list all supported values */
+static ssize_t available_values(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "0 1 \n");
+}
+
+static DEVICE_ATTR(gpo1_mode, 0666, show_mode, set_mode);
+static DEVICE_ATTR(gpo2_mode, 0666, show_mode, set_mode);
+static DEVICE_ATTR(gpo3_mode, 0666, show_mode, set_mode);
+static DEVICE_ATTR(gpo1_value, 0666, show_value, set_value);
+static DEVICE_ATTR(gpo2_value, 0666, show_value, set_value);
+static DEVICE_ATTR(gpo3_value, 0666, show_value, set_value);
+static DEVICE_ATTR(available_mode, 0444, available_modes, NULL);
+static DEVICE_ATTR(available_value, 0444, available_values, NULL);
+
+/** @brief device sysfs attribute table, about gpo */
+static struct attribute *gpo_attributes[] = {
+	&dev_attr_gpo1_mode.attr,
+	&dev_attr_gpo2_mode.attr,
+	&dev_attr_gpo3_mode.attr,
+	&dev_attr_gpo1_value.attr,
+	&dev_attr_gpo2_value.attr,
+	&dev_attr_gpo3_value.attr,
+	&dev_attr_available_mode.attr,
+	&dev_attr_available_value.attr,
+	NULL
+};
+
+static const struct attribute_group gpo_attr_group = {
+	.attrs	= gpo_attributes,
+};
+
 /**@brief probe bd71805 regulator device
  @param pdev bd71805 regulator platform device
  @retval 0 success
@@ -573,7 +721,8 @@ static __init int bd71805_probe(struct platform_device *pdev)
 		pmic->desc[i].supply_name = info->name;
 		pmic->desc[i].id = i;
 		pmic->desc[i].n_voltages = info->table_len;
-		if (i == BD71805_LDO1 || i == BD71805_LDO2 || i == BD71805_LDO3) { 
+		if (i == BD71805_LDO1 || i == BD71805_LDO2 || i == BD71805_LDO3
+		 || i == BD71805_VOSNVS || i == BD71805_VODVREF) {
 			pmic->desc[i].ops = &bd71805_ops_ldo;
 		} else {
 			pmic->desc[i].ops = &bd71805_ops;
@@ -607,6 +756,13 @@ static __init int bd71805_probe(struct platform_device *pdev)
 	}
 
 	bd71805_reg_write(pmic->mfd, BD71805_REG_BUCK1_CONF, BUCK1_RAMPRATE_1P25MV_US);
+
+	err = sysfs_create_group(&pdev->dev.kobj, &gpo_attr_group);
+	if (err != 0) {
+		dev_err(&pdev->dev, "Failed to create attribute group: %d\n", err);
+		goto err;
+	}
+
 	return 0;
 
 err:
@@ -625,6 +781,8 @@ static int __exit bd71805_remove(struct platform_device *pdev)
 {
 	struct bd71805_pmic *pmic = platform_get_drvdata(pdev);
 	int i;
+
+	sysfs_remove_group(&pdev->dev.kobj, &gpo_attr_group);
 
 	for (i = 0; i < BD71805_NUM_REGULATOR; i++)
 		regulator_unregister(pmic->rdev[i]);

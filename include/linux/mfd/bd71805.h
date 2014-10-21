@@ -52,6 +52,7 @@
 #define BD71805_REG_LDO3_VOLT		0x14
 #define BD71805_REG_BUCK_PDDIS		0x15
 #define BD71805_REG_LDO_PDDIS		0x16
+#define BD71805_REG_GPO			0x17
 #define BD71805_REG_CHG_STATE		0x34
 #define BD71805_REG_BAT_STAT		0x36
 #define BD71805_REG_VBUS_STAT		0x37
@@ -76,17 +77,25 @@
 #define BD71805_REG_CC_CCNTD_0		0x78
 #define BD71805_MAX_REGISTER		0xA0
 
-/* FIXME */
+/* BD71805_REG_LDO1_CTRL bits */
 #define LDO3_EN					0x01
 #define LDO2_EN					0x02
 #define LDO1_EN					0x04
+#define DVREF_EN				0x08
+#define VOSNVS_SW_EN				0x10
 #define VOLT_MASK				0x3F
 
-#define BAT_DET_DONE				0x10
+/* BD71805_REG_GPO bits */
+#define GPO1_OUT				0x01
+#define GPO1_MODE				0x10
+#define GPO_MODE_MASK				0x70
+
+/* BD71805_REG_BAT_STAT bits */
 #define BAT_DET					0x20
 #define BAT_DET_OFFSET				5
-#define DBAT_DET				0x01
+#define BAT_DET_DONE				0x10
 #define VBAT_OV					0x08
+#define DBAT_DET				0x01
 
 #define VBUS_DET				0x01
 
@@ -223,5 +232,13 @@ static inline int bd71805_update_bits(struct bd71805 *bd71805, u8 reg,
 {
 	return regmap_update_bits(bd71805->regmap, reg, mask, val);
 }
+
+/**
+ * @brief bd71805 platform data type
+ */
+struct bd71805_gpo_plat_data {
+	u32 mode;		///< gpo output mode
+	int gpio_base;		///< base gpio number in system
+};
 
 #endif /* __LINUX_MFD_BD71805_H */

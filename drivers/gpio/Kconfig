@@ -529,6 +529,13 @@ config GPIO_ADNP
 	  enough to represent all pins, but the driver will assume a
 	  register layout for 64 pins (8 registers).
 
+config GPIO_BD71805
+	tristate "BD71805 GPO"
+	depends on MFD_BD71805
+	help
+	  Say yes here to access the GPO signals of bd71805 chip from ROHM.
+
+
 comment "PCI GPIO expanders:"
 
 config GPIO_CS5535
