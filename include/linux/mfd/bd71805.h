@@ -53,12 +53,23 @@
 #define BD71805_REG_BUCK_PDDIS		0x15
 #define BD71805_REG_LDO_PDDIS		0x16
 #define BD71805_REG_GPO			0x17
+#define BD71805_REG_SEC			0x19
+#define BD71805_REG_MIN			0x1A
+#define BD71805_REG_HOUR		0x1B
+#define BD71805_REG_WEEK		0x1C
+#define BD71805_REG_DAY			0x1D
+#define BD71805_REG_MONTH		0x1E
+#define BD71805_REG_YEAR		0x1F
+#define BD71805_REG_ALM0_SEC		0x20
+#define BD71805_REG_ALM1_SEC		0x27
 #define BD71805_REG_CHG_STATE		0x34
 #define BD71805_REG_BAT_STAT		0x36
 #define BD71805_REG_VBUS_STAT		0x37
 #define BD71805_REG_BAT_TEMP		0x3B
+#define BD71805_REG_VSYS_MAX		0x40
 #define BD71805_REG_CHG_SET1		0x42
 #define BD71805_REG_CHG_SET2		0x43
+#define BD71805_REG_CHG_WDT_FST		0x45
 #define BD71805_REG_VM_CUR_U		0x56
 #define BD71805_REG_VM_CUR_L		0x57
 #define BD71805_REG_VM_VBAT_U		0x58
@@ -75,12 +86,16 @@
 #define BD71805_REG_CC_CCNTD_2		0x76
 #define BD71805_REG_CC_CCNTD_1		0x77
 #define BD71805_REG_CC_CCNTD_0		0x78
-#define BD71805_MAX_REGISTER		0xA0
+#define BD71805_REG_INT_EN_00		0x87
+#define BD71805_REG_INT_EN_12		0x93
+#define BD71805_REG_INT_STAT_12		0xA0
+#define BD71805_REG_TEST_MODE		0xFE
+#define BD71805_MAX_REGISTER		0xFF
 
 /* BD71805_REG_LDO1_CTRL bits */
-#define LDO3_EN					0x01
+#define LDO1_EN					0x01
 #define LDO2_EN					0x02
-#define LDO1_EN					0x04
+#define LDO3_EN					0x04
 #define DVREF_EN				0x08
 #define VOSNVS_SW_EN				0x10
 #define VOLT_MASK				0x3F
@@ -104,6 +119,22 @@
 #define BUCK1_RAMPRATE_2P5MV_US			0x2
 #define BUCK1_RAMPRATE_1P25MV_US		0x3
 
+/* BD71805_REG_INT_EN_00 bits */
+#define ALMALE					0x1
+
+/* BD71805_REG_INT_EN_12 bits */
+#define ALM0					0x1
+
+/* BD71805_REG_HOUR bits */
+#define HOUR_24HOUR				0x80
+
+/* BD71805_REG_CC_CCNTD_3 bits */
+#define CCNTRST					0x80
+#define CCNTENB					0x40
+
+/* BD71805_REG_CHG_SET1 bits */
+#define WDT_AUTO				0x40
+
 /** @brief charge state enumuration */
 enum CHG_STATE {
 	CHG_STATE_SUSPEND = 0x0,		/**< suspend state */
@@ -112,6 +143,17 @@ enum CHG_STATE {
 	CHG_STATE_FAST_CHARGE,			/**< fast charge state */
 	CHG_STATE_TOP_OFF,			/**< top off state */
 	CHG_STATE_DONE,				/**< charge complete */
+};
+
+/** @brief rtc or alarm registers structure */
+struct bd71805_rtc_alarm {
+	u8	sec;
+	u8	min;
+	u8	hour;
+	u8	week;
+	u8	day;
+	u8	month;
+	u8	year;
 };
 
 struct bd71805;
