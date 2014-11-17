@@ -20,11 +20,11 @@
 
 #define JITTER_DEFAULT		50		/* hope 50ms is enough */
 #define JITTER_REPORT_CAP	10000		/* 30 seconds */
-#define BD71805_BATTERY_CAP_MAH	100		/* unit mAh */
+#define BD71805_BATTERY_CAP_MAH	1500		/* unit mAh */
 #define BD71805_BATTERY_CAP	(BD71805_BATTERY_CAP_MAH * 360 / 1000)	/* [mAh]/1000*360[A/10S] for New ALG */
 #define MAX_VOLTAGE		4200000
 #define MIN_VOLTAGE		2500000
-#define MAX_CURRENT		2200
+#define MAX_CURRENT		1500
 #define AC_NAME			"bd71805_ac"
 #define BAT_NAME		"bd71805_bat"
 
@@ -678,7 +678,10 @@ static int bd71805_battery_get_property(struct power_supply *psy,
 		val->intval = pwr->vcell;
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY:
-		val->intval = (pwr->coulomb_cnt) * 100 / (65536 * pwr->full_cap);
+		val->intval = (pwr->coulomb_cnt >> 16) * 100 /  pwr->full_cap;
+		if (val->intval > 100) {
+			val->intval = 100;
+		}
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_NOW:
 		val->intval = pwr->coulomb_cnt;
