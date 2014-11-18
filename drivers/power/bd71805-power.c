@@ -84,7 +84,7 @@ static int soc_table[] = {
 struct bd71805_power {
 	struct device *dev;
 	struct bd71805 *mfd;			/**< parent for access register */
-	struct power_supply ac;		/**< alternating current power */
+	struct power_supply ac;			/**< alternating current power */
 	struct power_supply bat;		/**< battery power */
 	struct delayed_work bd_work;		/**< delayed work for timed work */
 
@@ -92,13 +92,14 @@ struct bd71805_power {
 
 	int    vbus_status;			/**< last vbus status */
 	int    charge_status;			/**< last charge status */
+	int    bat_status;			/**< last bat status */
 
 	int	hw_ocv1;			/**< HW ocv1 */
 	int	hw_ocv2;			/**< HW ocv2 */
 	int	bat_online;			/**< battery connect */
 	int	charger_online;			/**< charger connect */
 	int	vcell;				/**< battery voltage */
-	int	bat_status;			/**< last bat status */
+	int	rpt_status;			/**< battery status report */
 	int	bat_health;			/**< battery health */
 	int	full_cap;			/**< battery capacity */
 	int	curr;				/**< battery current */
@@ -326,19 +327,19 @@ static int bd71805_charge_status(struct bd71805_power *pwr)
 	switch (state) {
 	case 0x00:
 		ret = 0;
-		pwr->bat_status = POWER_SUPPLY_STATUS_DISCHARGING;
+		pwr->rpt_status = POWER_SUPPLY_STATUS_DISCHARGING;
 		pwr->bat_health = POWER_SUPPLY_HEALTH_GOOD;
 		break;
 	case 0x01:
 	case 0x02:
 	case 0x03:
 	case 0x0E:
-		pwr->bat_status = POWER_SUPPLY_STATUS_CHARGING;
+		pwr->rpt_status = POWER_SUPPLY_STATUS_CHARGING;
 		pwr->bat_health = POWER_SUPPLY_HEALTH_GOOD;
 		break;
 	case 0x0F:
 		ret = 0;
-		pwr->bat_status = POWER_SUPPLY_STATUS_FULL;
+		pwr->rpt_status = POWER_SUPPLY_STATUS_FULL;
 		pwr->bat_health = POWER_SUPPLY_HEALTH_GOOD;
 		break;
 	case 0x10:
@@ -352,18 +353,18 @@ static int bd71805_charge_status(struct bd71805_power *pwr)
 	case 0x23:
 	case 0x24:
 		ret = 0;
-		pwr->bat_status = POWER_SUPPLY_STATUS_NOT_CHARGING;
+		pwr->rpt_status = POWER_SUPPLY_STATUS_NOT_CHARGING;
 		pwr->bat_health = POWER_SUPPLY_HEALTH_OVERHEAT;
 		break;
 	case 0x40:
 		ret = 0;
-		pwr->bat_status = POWER_SUPPLY_STATUS_DISCHARGING;
+		pwr->rpt_status = POWER_SUPPLY_STATUS_DISCHARGING;
 		pwr->bat_health = POWER_SUPPLY_HEALTH_GOOD;
 		break;
 	case 0x7f:
 	default:
 		ret = 0;
-		pwr->bat_status = POWER_SUPPLY_STATUS_NOT_CHARGING;
+		pwr->rpt_status = POWER_SUPPLY_STATUS_NOT_CHARGING;
 		pwr->bat_health = POWER_SUPPLY_HEALTH_DEAD;
 		break;	
 	}
@@ -660,13 +661,13 @@ static int bd71805_battery_get_property(struct power_supply *psy,
 		break;
 	*/
 	case POWER_SUPPLY_PROP_STATUS:
-		val->intval = pwr->bat_status;
+		val->intval = pwr->rpt_status;
 		break;
 	case POWER_SUPPLY_PROP_HEALTH:
 		val->intval = pwr->bat_health;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_TYPE:
-		if (pwr->bat_status == POWER_SUPPLY_STATUS_CHARGING)
+		if (pwr->rpt_status == POWER_SUPPLY_STATUS_CHARGING)
 			val->intval = POWER_SUPPLY_CHARGE_TYPE_FAST;
 		else
 			val->intval = POWER_SUPPLY_CHARGE_TYPE_NONE;
