@@ -15,11 +15,24 @@
 #include <linux/init.h>
 #include <linux/slab.h>
 #include <linux/i2c.h>
+#include <linux/interrupt.h>
+#include <linux/irq.h>
+#include <linux/irqdomain.h>
 #include <linux/gpio.h>
 #include <linux/regmap.h>
 #include <linux/of_device.h>
+#include <linux/of_gpio.h>
 #include <linux/mfd/core.h>
 #include <linux/mfd/bd71805.h>
+
+/** @brief bd71805 irq resource */
+static struct resource rtc_resources[] = {
+	{
+		.start  = BD71805_IRQ_ALARM,
+		.end    = BD71805_IRQ_ALARM,
+		.flags  = IORESOURCE_IRQ,
+	}
+};
 
 /** @brief bd71805 multi function cells */
 static struct mfd_cell bd71805_mfd_cells[] = {
@@ -34,8 +47,88 @@ static struct mfd_cell bd71805_mfd_cells[] = {
 	},
 	{
 		.name = "bd71805-rtc",
+		.num_resources = ARRAY_SIZE(rtc_resources),
+		.resources = &rtc_resources[0],
 	},
 };
+
+/** @brief bd71805 irqs */
+static const struct regmap_irq bd71805_irqs[] = {
+	/* INT_EN_0 */
+	[BD71805_IRQ_ALARM] = {
+		.mask = BD71805_INT_EN_00_ALMAST_MASK,
+		.reg_offset = 0,
+	},
+	[BD71805_IRQ_TEMPERATURE] = {
+		.mask = BD71805_INT_EN_00_TMPAST_MASK,
+		.reg_offset = 0,
+	},
+	[BD71805_IRQ_BAT_MON] = {
+		.mask = BD71805_INT_EN_00_BMONAST_MASK,
+		.reg_offset = 0,
+	},
+	[BD71805_IRQ_THERM] = {
+		.mask = BD71805_INT_EN_00_BATST_MASK,
+		.reg_offset = 0,
+	},
+	[BD71805_IRQ_CHARGE] = {
+		.mask = BD71805_INT_EN_00_CHGAST_MASK,
+		.reg_offset = 0,
+	},
+	[BD71805_IRQ_VSYS] = {
+		.mask = BD71805_INT_EN_00_VSYSAST_MASK,
+		.reg_offset = 0,
+	},
+	[BD71805_IRQ_DCIN] = {
+		.mask = BD71805_INT_EN_00_DCINAST_MASK,
+		.reg_offset = 0,
+	},
+	[BD71805_IRQ_BUCK] = {
+		.mask = BD71805_INT_EN_00_BUCKAST_MASK,
+		.reg_offset = 0,
+	},
+};
+
+/** @brief bd71805 irq chip definition */
+static struct regmap_irq_chip bd71805_irq_chip = {
+	.name = "bd71805",
+	.irqs = bd71805_irqs,
+	.num_irqs = ARRAY_SIZE(bd71805_irqs),
+	.num_regs = 1,
+	.irq_reg_stride = 1,
+	.status_base = BD71805_REG_INT_STAT_00,
+	.mask_base = BD71805_REG_INT_EN_00,
+	.mask_invert = true,
+	.ack_base = BD71805_REG_INT_STAT_00,
+};
+
+static int bd71805_irq_init(struct bd71805 *bd71805, struct bd71805_board* bdinfo) {
+	int irq;
+	int ret = 0;
+
+	if (!bdinfo) {
+		dev_warn(bd71805->dev, "No interrupt support, no pdata\n");
+		return -EINVAL;
+	}
+	
+	irq = gpio_to_irq(bdinfo->gpio_intr);
+
+	bd71805->chip_irq = irq;
+	ret = regmap_add_irq_chip(bd71805->regmap, bd71805->chip_irq,
+		IRQF_ONESHOT, bdinfo->irq_base,
+		&bd71805_irq_chip, &bd71805->irq_data);
+	if (ret < 0)
+		dev_warn(bd71805->dev, "Failed to add irq_chip %d\n", ret);
+	return ret;
+}
+
+static int bd71805_irq_exit(struct bd71805 *bd71805)
+{
+	if (bd71805->chip_irq > 0)
+		regmap_del_irq_chip(bd71805->chip_irq, bd71805->irq_data);
+	return 0;
+}
+
 
 static bool is_volatile_reg(struct device *dev, unsigned int reg)
 {
@@ -76,7 +169,7 @@ static struct bd71805_board *bd71805_parse_dt(struct i2c_client *client,
 	struct bd71805_board *board_info;
 	unsigned int prop;
 	const struct of_device_id *match;
-	int ret = 0;
+	int r = 0;
 
 	match = of_match_device(bd71805_of_match, &client->dev);
 	if (!match) {
@@ -93,7 +186,24 @@ static struct bd71805_board *bd71805_parse_dt(struct i2c_client *client,
 		return NULL;
 	}
 
+	board_info->gpio_intr = of_get_named_gpio(np, "gpio_intr", 0);
+        if (!gpio_is_valid(board_info->gpio_intr)) {
+		dev_err(&client->dev, "no pmic intr pin available\n");
+		goto err_intr;
+        }
+
+        r = of_property_read_u32(np, "irq_base", &prop);
+        if (!r) {
+		board_info->irq_base = prop;
+        } else {
+		board_info->irq_base = -1;
+        }
+
 	return board_info;
+
+err_intr:
+	devm_kfree(&client->dev, board_info);
+	return NULL;
 }
 #else
 static inline
@@ -147,9 +257,12 @@ static int bd71805_i2c_probe(struct i2c_client *i2c,
 		return ret;
 	}
 
+	bd71805_irq_init(bd71805, of_pmic_plat_data);
+
 	ret = mfd_add_devices(bd71805->dev, -1,
 			      bd71805_mfd_cells, ARRAY_SIZE(bd71805_mfd_cells),
-			      NULL, 0, NULL);
+			      NULL, 0,
+			      regmap_irq_get_domain(bd71805->irq_data));
 	if (ret < 0)
 		goto err;
 
@@ -169,6 +282,7 @@ static int bd71805_i2c_remove(struct i2c_client *i2c)
 {
 	struct bd71805 *bd71805 = i2c_get_clientdata(i2c);
 
+	bd71805_irq_exit(bd71805);
 	mfd_remove_devices(bd71805->dev);
 	kfree(bd71805);
 

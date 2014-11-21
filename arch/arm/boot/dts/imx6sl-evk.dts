@@ -236,6 +236,8 @@
 		reg = <0x4b>;
 		compatible = "rohm,bd71805";
 
+		gpio_intr = <&gpio3 21 0>;
+
 		gpo {
 			rohm,mode = <0x70>;	/* 0b0111_0000 all gpos with cmos output mode */
 		};
@@ -303,6 +305,7 @@
 				regulator-compatible = "ldo3";
 				regulator-min-microvolt = <800000>;
 				regulator-max-microvolt = <3300000>;
+				regulator-boot-on;
 			};
 
 			vodvref_reg: regulator@7 {
@@ -491,6 +494,8 @@
 				MX6SL_PAD_LCD_RESET__GPIO2_IO19 0x1b0b0
 				MX6SL_PAD_KEY_COL4__GPIO4_IO00	0x80000000
 				MX6SL_PAD_KEY_COL5__GPIO4_IO02	0x80000000
+				/* rohm irq pin */
+				MX6SL_PAD_REF_CLK_24M__GPIO3_IO21 0x80000000
 			>;
 		};
 

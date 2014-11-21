@@ -62,6 +62,7 @@
 #define BD71805_REG_YEAR		0x1F
 #define BD71805_REG_ALM0_SEC		0x20
 #define BD71805_REG_ALM1_SEC		0x27
+#define BD71805_REG_ALM0_MASK		0x2E
 #define BD71805_REG_CHG_STATE		0x34
 #define BD71805_REG_BAT_STAT		0x36
 #define BD71805_REG_VBUS_STAT		0x37
@@ -93,6 +94,7 @@
 #define BD71805_REG_CC_CURCD		0x79
 #define BD71805_REG_INT_EN_00		0x87
 #define BD71805_REG_INT_EN_12		0x93
+#define BD71805_REG_INT_STAT_00		0x94
 #define BD71805_REG_INT_STAT_12		0xA0
 #define BD71805_REG_TEST_MODE		0xFE
 #define BD71805_MAX_REGISTER		0xFF
@@ -122,10 +124,33 @@
 #define BUCK1_RAMPRATE_10MV_US			0x0
 #define BUCK1_RAMPRATE_5MV_US			0x1
 #define BUCK1_RAMPRATE_2P5MV_US			0x2
-#define BUCK1_RAMPRATE_1P25MV_US		0x3
+#define BUCK1_RAMPRATE_1P25MV_US		0x3a
+
+/* BD71805_REG_ALM0_MASK bits */
+#define A0_ONESEC				0x80
 
 /* BD71805_REG_INT_EN_00 bits */
 #define ALMALE					0x1
+enum {
+	BD71805_INT_EN_00_ALMAST_MASK	=	0x01,
+	BD71805_INT_EN_00_TMPAST_MASK	=	0x02,
+	BD71805_INT_EN_00_BMONAST_MASK	=	0x04,
+	BD71805_INT_EN_00_BATST_MASK	=	0x08,
+	BD71805_INT_EN_00_CHGAST_MASK	=	0x10,
+	BD71805_INT_EN_00_VSYSAST_MASK	=	0x20,
+	BD71805_INT_EN_00_DCINAST_MASK	=	0x40,
+	BD71805_INT_EN_00_BUCKAST_MASK	=	0x80,
+};
+enum {
+	BD71805_IRQ_ALARM	=	0x0,
+	BD71805_IRQ_TEMPERATURE,
+	BD71805_IRQ_BAT_MON,
+	BD71805_IRQ_THERM,
+	BD71805_IRQ_CHARGE,
+	BD71805_IRQ_VSYS,
+	BD71805_IRQ_DCIN,
+	BD71805_IRQ_BUCK,
+};
 
 /* BD71805_REG_INT_EN_12 bits */
 #define ALM0					0x1
@@ -173,6 +198,8 @@ struct bd71805;
 struct bd71805_board {
 	struct regulator_init_data *bd71805_pmic_init_data[BD71805_NUM_REGULATOR];
 	/**< regulator initialize data */
+	int	gpio_intr;		/**< gpio connected to bd71805 INTB */
+	int	irq_base;		/**< bd71805 sub irqs base #  */
 };
 
 /**
@@ -185,6 +212,10 @@ struct bd71805 {
 	struct regmap *regmap;
 	struct mutex io_mutex;
 	unsigned int id;
+
+	/* IRQ Handling */
+	int 	chip_irq;		/**< bd71805 irq to host cpu */
+	struct regmap_irq_chip_data *irq_data;
 
 	/* Client devices */
 	struct bd71805_pmic *pmic;	/**< client device regulator */

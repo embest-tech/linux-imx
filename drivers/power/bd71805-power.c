@@ -394,7 +394,7 @@ static int calibration_coulomb_counter(struct bd71805_power* pwr) {
 
 	bcap = pwr->full_cap * soc / 1000;
 
-	bd71805_reg_write16(pwr->mfd, BD71805_REG_CC_CCNTD_3, ((bcap + bcap / 200) & 0x1FFFUL) << 16);
+	bd71805_reg_write16(pwr->mfd, BD71805_REG_CC_CCNTD_3, ((bcap + bcap / 200) & 0x1FFFUL));
 
 	pwr->coulomb_cnt = bd71805_reg_read32(pwr->mfd, BD71805_REG_CC_CCNTD_3) & 0x1FFFFFFFUL;
 	dev_info(pwr->dev, "CC_CCNTD = %d\n", pwr->coulomb_cnt);

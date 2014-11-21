@@ -22,7 +22,6 @@
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
 #include <linux/of.h>
-
 #include <linux/mfd/bd71805.h>
 
 struct bd71805_rtc {
@@ -146,6 +145,8 @@ static int bd71805_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
 	struct bd71805 *mfd = dev_get_drvdata(dev->parent);
 	int ret;
 
+	// printk("%s() L%d\n", __func__, __LINE__);
+
 	ret = bd71805_rtc_alarm_irq_enable(dev, 0);
 	if (ret)
 		return ret;
@@ -184,6 +185,8 @@ static irqreturn_t bd71805_rtc_interrupt(int irq, void *rtc)
 	ret = regmap_write(mfd->regmap, BD71805_REG_INT_STAT_12, rtc_reg);
 	if (ret)
 		return IRQ_NONE;
+
+	// printk("IRQ ALARM.\n");
 
 	/* Notify RTC core on event */
 	rtc_update_irq(bd_rtc->rtc, 1, events);
@@ -231,7 +234,11 @@ static int bd71805_rtc_probe(struct platform_device *pdev)
 	if (ret < 0)
 		return ret;
 
-	/*
+	/* Disable ALM0 mask */
+	ret = regmap_write(bd71805->regmap, BD71805_REG_ALM0_MASK, 0x77);
+	if (ret < 0)
+		return ret;
+
 	irq  = platform_get_irq(pdev, 0);
 	if (irq <= 0) {
 		dev_warn(&pdev->dev, "Wake up is not possible as irq = %d\n", irq);
@@ -244,8 +251,7 @@ static int bd71805_rtc_probe(struct platform_device *pdev)
 	if (ret < 0) {
 		dev_err(&pdev->dev, "IRQ is not free.\n");
 		return ret;
-	}*/
-	irq = 1;
+	}
 	bd_rtc->irq = irq;
 	device_set_wakeup_capable(&pdev->dev, 1);
 
