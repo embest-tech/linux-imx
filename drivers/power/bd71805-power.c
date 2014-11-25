@@ -20,13 +20,15 @@
 
 #define JITTER_DEFAULT		50		/* hope 50ms is enough */
 #define JITTER_REPORT_CAP	10000		/* 30 seconds */
-#define BD71805_BATTERY_CAP_MAH	1500		/* unit mAh */
-#define BD71805_BATTERY_CAP	(BD71805_BATTERY_CAP_MAH * 360 / 1000)	/* [mAh]/1000*360[A/10S] for New ALG */
+#define BD71805_BATTERY_CAP	(battery_capacity * 360 / 1000)	/* [mAh]/1000*360[A/10S] for New ALG */
 #define MAX_VOLTAGE		4200000
 #define MIN_VOLTAGE		2500000
 #define MAX_CURRENT		1500
 #define AC_NAME			"bd71805_ac"
 #define BAT_NAME		"bd71805_bat"
+
+static unsigned int battery_capacity;
+
 
 static int ocv_table[] = {
 	4300000,
@@ -695,7 +697,7 @@ static int bd71805_battery_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
 	case POWER_SUPPLY_PROP_CHARGE_FULL:
-		val->intval = BD71805_BATTERY_CAP_MAH * 1000;
+		val->intval = battery_capacity * 1000;
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
 		val->intval = pwr->curr_sar;
@@ -854,6 +856,10 @@ static int __init bd71805_power_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, pwr);
 
+	if (battery_capacity <= 0) {
+		battery_capacity = 1500;
+	}
+
 	bd71805_init_hardware(pwr);
 
 	pwr->bat.name = BAT_NAME;
@@ -936,6 +942,8 @@ static struct platform_driver bd71805_power_driver = {
 	.remove = __exit_p(bd71805_power_remove),
 };
 
+
+
 /** @brief module initialize function */
 static int __init bd71805_power_init(void)
 {
@@ -951,6 +959,9 @@ static void __exit bd71805_power_exit(void)
 }
 
 module_exit(bd71805_power_exit);
+
+module_param(battery_capacity, uint, 0644);
+MODULE_PARM_DESC(battery_capacity, "battery capacity, unit mAh");
 
 MODULE_AUTHOR("Tony Luo <luofc@embest-tech.com>");
 MODULE_AUTHOR("Peter Yang <yanglsh@embest-tech.com>");

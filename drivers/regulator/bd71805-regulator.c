@@ -495,7 +495,7 @@ static struct bd71805_board *bd71805_parse_dt_reg_data(
 		struct of_regulator_match **bd71805_reg_matches)
 {
 	struct bd71805_board *pmic_plat_data;
-	struct bd71805 *bd71805 = dev_get_drvdata(pdev->dev.parent);
+	// struct bd71805 *bd71805 = dev_get_drvdata(pdev->dev.parent);
 	struct device_node *np, *regulators;
 	struct of_regulator_match *matches;
 	int idx = 0, ret, count;

@@ -132,7 +132,7 @@ static int bd71805_irq_exit(struct bd71805 *bd71805)
 
 static bool is_volatile_reg(struct device *dev, unsigned int reg)
 {
-	struct bd71805 *bd71805 = dev_get_drvdata(dev);
+	// struct bd71805 *bd71805 = dev_get_drvdata(dev);
 
 	/*
 	 * Caching all regulator registers.

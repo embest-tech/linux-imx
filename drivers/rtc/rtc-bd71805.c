@@ -43,7 +43,7 @@ static int bd71805_rtc_alarm_irq_enable(struct device *dev, unsigned enabled)
 	return regmap_write(mfd->regmap, BD71805_REG_INT_EN_12, val);
 }
 
-static struct rtc_time* hw_to_rtc_time(struct rtc_time* tm, struct bd71805_rtc_alarm* hw_rtc) {
+static struct rtc_time* hw_to_rtc_time(struct rtc_time* tm, const struct bd71805_rtc_alarm* hw_rtc) {
 	u8 hour;
 
 	tm->tm_sec = bcd2bin(hw_rtc->sec);
@@ -56,7 +56,7 @@ static struct rtc_time* hw_to_rtc_time(struct rtc_time* tm, struct bd71805_rtc_a
 	return tm;
 }
 
-static struct bd71805_rtc_alarm* rtc_time_to_hw(struct bd71805_rtc_alarm* hw_rtc, struct rtc_time* tm) {
+static struct bd71805_rtc_alarm* rtc_time_to_hw(struct bd71805_rtc_alarm* hw_rtc, const struct rtc_time* tm) {
 	hw_rtc->sec = bin2bcd(tm->tm_sec);
 	hw_rtc->min = bin2bcd(tm->tm_min);
 	hw_rtc->hour = HOUR_24HOUR | bin2bcd(tm->tm_hour);
