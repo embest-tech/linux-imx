@@ -24,14 +24,21 @@
 #include <linux/of.h>
 #include <linux/mfd/bd71805.h>
 
+/** @brief bd71805 rtc struct */
 struct bd71805_rtc {
-	struct rtc_device	*rtc;
-	int irq;
+	struct rtc_device	*rtc;		/**< system rtc device */
+	int irq;				/**< rtc irq */
 };
 
 /* @brief Total number of RTC registers needed to set time*/
-#define NUM_TIME_REGS	(BD71805_REG_YEAR - BD71805_REG_SEC + 1)
+// #define NUM_TIME_REGS	(BD71805_REG_YEAR - BD71805_REG_SEC + 1)
 
+/**@brief enable or disable rtc alarm irq
+ * @param dev rtc device of system
+ * @param enabled enable if non-zero
+ * @retval 0 success
+ * @retval negative error number
+ */
 static int bd71805_rtc_alarm_irq_enable(struct device *dev, unsigned enabled)
 {
 	struct bd71805 *mfd = dev_get_drvdata(dev->parent);
@@ -43,6 +50,11 @@ static int bd71805_rtc_alarm_irq_enable(struct device *dev, unsigned enabled)
 	return regmap_write(mfd->regmap, BD71805_REG_INT_EN_12, val);
 }
 
+/**@brief bd71805 rtc time convert to linux time
+ * @param tm linux rtc time
+ * @param hw_rtc bd71805 rtc time
+ * @return argument tm
+ */
 static struct rtc_time* hw_to_rtc_time(struct rtc_time* tm, const struct bd71805_rtc_alarm* hw_rtc) {
 	u8 hour;
 
@@ -56,6 +68,11 @@ static struct rtc_time* hw_to_rtc_time(struct rtc_time* tm, const struct bd71805
 	return tm;
 }
 
+/**@brief linux time convert bd71805 rtc time
+ * @param hw_rtc bd71805 rtc time
+ * @param tm linux rtc time
+ * @return argument hw_rtc
+ */
 static struct bd71805_rtc_alarm* rtc_time_to_hw(struct bd71805_rtc_alarm* hw_rtc, const struct rtc_time* tm) {
 	hw_rtc->sec = bin2bcd(tm->tm_sec);
 	hw_rtc->min = bin2bcd(tm->tm_min);
@@ -76,6 +93,12 @@ static struct bd71805_rtc_alarm* rtc_time_to_hw(struct bd71805_rtc_alarm* hw_rtc
  *  - Months are 1..12 vs Linux 0-11
  *  - Years are 0..99 vs Linux 1900..N (we assume 21st century)
  */
+/**@brief read date/time from bd71805 rtc
+ * @param dev rtc device of system
+ * @param tm date/time store target
+ * @retval 0 success
+ * @retval negative error number
+ */
 static int bd71805_rtc_read_time(struct device *dev, struct rtc_time *tm)
 {
 	struct bd71805_rtc_alarm rtc_data[1];
@@ -93,6 +116,12 @@ static int bd71805_rtc_read_time(struct device *dev, struct rtc_time *tm)
 	return ret;
 }
 
+/**@brief write date/time to bd71805 rtc
+ * @param dev rtc device of system
+ * @param tm date/time source
+ * @retval 0 success
+ * @retval negative error number
+ */
 static int bd71805_rtc_set_time(struct device *dev, struct rtc_time *tm)
 {
 	struct bd71805_rtc_alarm rtc_data[1];
@@ -111,8 +140,11 @@ static int bd71805_rtc_set_time(struct device *dev, struct rtc_time *tm)
 	return ret;
 }
 
-/*
- * Gets current bd71805 RTC alarm time.
+/**@brief Gets current bd71805 RTC alarm time.
+ * @param dev rtc device of system
+ * @param alm alarm date/time store target
+ * @retval 0 success
+ * @retval negative error number
  */
 static int bd71805_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alm)
 {
@@ -139,6 +171,12 @@ static int bd71805_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alm)
 	return ret;
 }
 
+/**@brief Set current bd71805 RTC alarm time
+ * @param dev rtc device of system
+ * @param alm alarm date/time to set
+ * @retval 0 success
+ * @retval negative error number
+ */
 static int bd71805_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
 {
 	struct bd71805_rtc_alarm rtc_data[1];
@@ -166,6 +204,12 @@ static int bd71805_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
 	return ret;
 }
 
+/**@brief bd71805 rtc alarm interrupt
+ * @param irq system irq
+ * @param rtc rtc device of system
+ * @retval IRQ_HANDLED success
+ * @retval IRQ_NONE error
+ */
 static irqreturn_t bd71805_rtc_interrupt(int irq, void *rtc)
 {
 	struct device *dev = rtc;
@@ -194,6 +238,7 @@ static irqreturn_t bd71805_rtc_interrupt(int irq, void *rtc)
 	return IRQ_HANDLED;
 }
 
+/** @brief function operations definition */
 static struct rtc_class_ops bd71805_rtc_ops = {
 	.read_time	= bd71805_rtc_read_time,
 	.set_time	= bd71805_rtc_set_time,
@@ -202,7 +247,11 @@ static struct rtc_class_ops bd71805_rtc_ops = {
 	.alarm_irq_enable = bd71805_rtc_alarm_irq_enable,
 };
 
-/*----------------------------------------------------------------------*/
+/**@brief probe bd71805 rtc device
+ @param pdev bd71805 rtc platform device
+ @retval 0 success
+ @retval negative fail
+*/
 static int bd71805_rtc_probe(struct platform_device *pdev)
 {
 	struct bd71805 *bd71805 = NULL;
@@ -272,6 +321,10 @@ static int bd71805_rtc_probe(struct platform_device *pdev)
  * Disable bd71805 RTC interrupts.
  * Sets status flag to free.
  */
+/**@brief remove bd71805 rtc device
+ @param pdev bd71805 rtc platform device
+ @return 0
+*/
 static int bd71805_rtc_remove(struct platform_device *pdev)
 {
 	bd71805_rtc_alarm_irq_enable(&pdev->dev, 0);
@@ -279,6 +332,10 @@ static int bd71805_rtc_remove(struct platform_device *pdev)
 	return 0;
 }
 
+/**@brief shutdown bd71805 rtc device
+ @param pdev bd71805 rtc platform device
+ @return void
+*/
 static void bd71805_rtc_shutdown(struct platform_device *pdev)
 {
 	/* mask timer interrupts, but leave alarm interrupts on to enable
@@ -287,6 +344,10 @@ static void bd71805_rtc_shutdown(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_PM_SLEEP
+/**@brief suspend bd71805 rtc device
+ * @param dev rtc device of system
+ * @retval 0
+ */
 static int bd71805_rtc_suspend(struct device *dev)
 {
 	struct bd71805_rtc *bd_rtc = dev_get_drvdata(dev);
@@ -296,6 +357,10 @@ static int bd71805_rtc_suspend(struct device *dev)
 	return 0;
 }
 
+/**@brief resume bd71805 rtc device
+ * @param dev rtc device of system
+ * @retval 0
+ */
 static int bd71805_rtc_resume(struct device *dev)
 {
 	struct bd71805_rtc *bd_rtc = dev_get_drvdata(dev);
@@ -328,12 +393,14 @@ static struct platform_driver bd71805rtc_driver = {
 	},
 };
 
+/**@brief module initialize function */
 static int __init bd71805_rtc_init(void)
 {
 	return platform_driver_register(&bd71805rtc_driver);
 }
 module_init(bd71805_rtc_init);
 
+/**@brief module deinitialize function */
 static void __exit bd71805_rtc_exit(void)
 {
 	platform_driver_unregister(&bd71805rtc_driver);

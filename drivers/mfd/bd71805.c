@@ -102,6 +102,12 @@ static struct regmap_irq_chip bd71805_irq_chip = {
 	.ack_base = BD71805_REG_INT_STAT_00,
 };
 
+/** @brief bd71805 irq initialize 
+ *  @param bd71805 bd71805 device to init
+ *  @param bdinfo platform init data
+ *  @retval 0 probe success
+ *  @retval negative error number
+ */
 static int bd71805_irq_init(struct bd71805 *bd71805, struct bd71805_board* bdinfo) {
 	int irq;
 	int ret = 0;
@@ -122,6 +128,11 @@ static int bd71805_irq_init(struct bd71805 *bd71805, struct bd71805_board* bdinf
 	return ret;
 }
 
+/** @brief bd71805 irq initialize 
+ *  @param bd71805 bd71805 device to init
+ *  @retval 0 probe success
+ *  @retval negative error number
+ */
 static int bd71805_irq_exit(struct bd71805 *bd71805)
 {
 	if (bd71805->chip_irq > 0)
@@ -129,7 +140,10 @@ static int bd71805_irq_exit(struct bd71805 *bd71805)
 	return 0;
 }
 
-
+/** @brief check whether volatile register 
+ *  @param dev kernel device pointer
+ *  @param reg register index
+ */
 static bool is_volatile_reg(struct device *dev, unsigned int reg)
 {
 	// struct bd71805 *bd71805 = dev_get_drvdata(dev);

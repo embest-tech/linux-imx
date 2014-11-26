@@ -131,6 +131,8 @@
 
 /* BD71805_REG_INT_EN_00 bits */
 #define ALMALE					0x1
+
+/* BD71805 interrupt masks */
 enum {
 	BD71805_INT_EN_00_ALMAST_MASK	=	0x01,
 	BD71805_INT_EN_00_TMPAST_MASK	=	0x02,
@@ -141,6 +143,7 @@ enum {
 	BD71805_INT_EN_00_DCINAST_MASK	=	0x40,
 	BD71805_INT_EN_00_BUCKAST_MASK	=	0x80,
 };
+/* BD71805 interrupt irqs */
 enum {
 	BD71805_IRQ_ALARM	=	0x0,
 	BD71805_IRQ_TEMPERATURE,
