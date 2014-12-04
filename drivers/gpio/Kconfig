@@ -315,6 +315,12 @@ config GPIO_ADP5588_IRQ
 	  Say yes here to enable the adp5588 to be used as an interrupt
 	  controller. It requires the driver to be built in the kernel.
 
+config GPIO_BD71805
+	tristate "BD71805 GPO"
+	depends on MFD_BD71805
+	help
+	  Say yes here to access the GPO signals of bd71805 chip from ROHM.
+
 comment "PCI GPIO expanders:"
 
 config GPIO_CS5535

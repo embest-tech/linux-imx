@@ -257,4 +257,10 @@ config BATTERY_DA9052
 	  Say Y here to enable support for batteries charger integrated into
 	  DA9052 PMIC.
 
+config BD71805_POWER
+        tristate "ROHM BD71805MWV Charger for Battery and Adapter Power"
+        depends on MFD_BD71805
+        help
+          Say Y to enable support for the BD71805MWV charger.
+
 endif # POWER_SUPPLY

@@ -804,6 +804,14 @@ config MFD_MXC_HDMI
 	  This is the core driver for the i.Mx on-chip HDMI.  This MFD
 	  driver connects with the video and audio drivers for HDMI.
 
+config MFD_BD71805
+	bool "BD71805MWV Power Management chip"
+	depends on I2C=y
+	select MFD_CORE
+	help
+	  if you say yes here you get support for the BD71805MWV
+	  Power Management chips.
+
 endif # MFD_SUPPORT
 
 menu "Multimedia Capabilities Port drivers"

@@ -335,5 +335,11 @@ config REGULATOR_TPS65910
 	help
 	  This driver supports TPS65910 voltage regulator chips.
 
+config REGULATOR_BD71805
+	tristate "RoHM BD71805MWV Power Regulator"
+	depends on MFD_BD71805
+	help
+	  This driver supports BD71805MWV voltage regulator chips.
+
 endif
 
