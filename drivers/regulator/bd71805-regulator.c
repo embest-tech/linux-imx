@@ -701,6 +701,12 @@ static __init int bd71805_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
+	err = pmic_plat_data->bd71805_init(bd71805);
+	if (err) {
+		return err;
+	}
+
+
 	pmic = kzalloc(sizeof(*pmic), GFP_KERNEL);
 	if (!pmic) {
 		dev_err(&pdev->dev, "Memory allocation failed for pmic\n");
