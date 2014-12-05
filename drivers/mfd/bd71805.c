@@ -33,6 +33,11 @@ static struct resource rtc_resources[] = {
 	}
 };
 
+static struct bd71805_gpo_plat_data gpo_plat_data = {
+	.mode = 0x70,
+	.gpio_base = 0,
+};
+
 /** @brief bd71805 multi function cells */
 static struct mfd_cell bd71805_mfd_cells[] = {
 	{
@@ -43,6 +48,7 @@ static struct mfd_cell bd71805_mfd_cells[] = {
 	},
 	{
 		.name = "bd71805-gpo",
+		.platform_data = &gpo_plat_data,
 	},
 	{
 		.name = "bd71805-rtc",
@@ -338,6 +344,11 @@ static int bd71805_i2c_probe(struct i2c_client *i2c,
 	bd71805->id = chip_id;
 	bd71805->read = bd71805_i2c_read;
 	bd71805->write = bd71805_i2c_write;
+
+	bd71805->chip_irq = -1;
+	if (i2c->irq) {
+		bd71805->chip_irq = i2c->irq;
+	}
 	mutex_init(&bd71805->io_mutex);
 
 	/* bd71805->regmap = devm_regmap_init_i2c(i2c, &bd71805_regmap_config);
@@ -347,7 +358,7 @@ static int bd71805_i2c_probe(struct i2c_client *i2c,
 		return ret;
 	}*/
 
-	bd71805_irq_init(bd71805, of_pmic_plat_data);
+	bd71805_irq_init(bd71805, pmic_plat_data);
 
 	ret = mfd_add_devices(bd71805->dev, -1,
 			      bd71805_mfd_cells, ARRAY_SIZE(bd71805_mfd_cells),

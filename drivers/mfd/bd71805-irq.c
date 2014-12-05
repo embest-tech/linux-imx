@@ -52,7 +52,7 @@ static irqreturn_t bd71805_irq(int irq, void *irq_data)
 	bd71805->read(bd71805, BD71805_INT_MSK, 1, &reg);
 	irq_mask = reg;
 
-	irq_sts &= ~irq_mask;
+	irq_sts &= irq_mask;
 
 	if (!irq_sts)
 		return IRQ_NONE;
@@ -100,14 +100,14 @@ static void bd71805_irq_enable(struct irq_data *data)
 {
 	struct bd71805 *bd71805 = irq_data_get_irq_chip_data(data);
 
-	bd71805->irq_mask &= ~( 1 << irq_to_bd71805_irq(bd71805, data->irq));
+	bd71805->irq_mask |= ( 1 << irq_to_bd71805_irq(bd71805, data->irq));
 }
 
 static void bd71805_irq_disable(struct irq_data *data)
 {
 	struct bd71805 *bd71805 = irq_data_get_irq_chip_data(data);
 
-	bd71805->irq_mask |= ( 1 << irq_to_bd71805_irq(bd71805, data->irq));
+	bd71805->irq_mask &= ~( 1 << irq_to_bd71805_irq(bd71805, data->irq));
 }
 
 static struct irq_chip bd71805_irq_chip = {
@@ -121,25 +121,25 @@ static struct irq_chip bd71805_irq_chip = {
 int bd71805_irq_init(struct bd71805 *bd71805, struct bd71805_board *pdata)
 {
 	int ret, cur_irq;
-	int flags = IRQF_ONESHOT;
+	int flags = IRQF_ONESHOT | IRQF_TRIGGER_LOW;
 	int irq;
-
-	irq = gpio_to_irq(pdata->gpio_intr);
-	if (irq < 0) {
-		dev_warn(bd71805->dev, "No interrupt support, no core IRQ\n");
-		return -EINVAL;
-	}
 
 	if (!pdata || !pdata->irq_base) {
 		dev_warn(bd71805->dev, "No interrupt support, no IRQ base\n");
 		return -EINVAL;
 	}
 
-	bd71805->chip_irq = irq;
-	bd71805->irq_mask = 0xFFFFFF;
+	irq = bd71805->chip_irq;
+	if (irq < 0) {
+		dev_warn(bd71805->dev, "No interrupt support, no core IRQ\n");
+		return -EINVAL;
+	}
+
+	bd71805->irq_mask = 0x0;
 
 	mutex_init(&bd71805->irq_lock);
 
+	bd71805->irq_base = pdata->irq_base;
 	bd71805->irq_num = BD71805_NUM_IRQ;
 
 	/* Register with genirq */
@@ -166,7 +166,7 @@ int bd71805_irq_init(struct bd71805 *bd71805, struct bd71805_board *pdata)
 	irq_set_irq_type(irq, IRQ_TYPE_LEVEL_LOW);
 
 	if (ret != 0)
-		dev_err(bd71805->dev, "Failed to request IRQ: %d\n", ret);
+		dev_err(bd71805->dev, "Failed to request IRQ %d: %d\n", irq, ret);
 
 	return ret;
 }

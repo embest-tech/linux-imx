@@ -1618,10 +1618,8 @@ static void __init mx6_evk_init(void)
 	spi_device_init();
 
 	// mx6sl_evk_init_pfuze100(0);
-	{
-	u32 irq = gpio_to_irq(BD71805_INTB);
-	mx6sl_evk_init_bd71805(irq);
-	}
+	mxc_iomux_v3_setup_pad(MX6SL_PAD_REF_CLK_24M__GPIO_3_21);
+	mx6sl_evk_init_bd71805(BD71805_INTB);
 
 	imx6q_add_anatop_thermal_imx(1, &mx6sl_anatop_thermal_data);
 

@@ -306,7 +306,8 @@ static int bd71805_rtc_probe(struct platform_device *pdev)
 	if (ret < 0)
 		return ret;
 
-	irq  = platform_get_irq(pdev, 0);
+	irq = platform_get_irq(pdev, 0);
+	irq += bd71805->irq_base;
 	if (irq <= 0) {
 		dev_warn(&pdev->dev, "Wake up is not possible as irq = %d\n", irq);
 		return -ENXIO;

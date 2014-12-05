@@ -133,12 +133,11 @@ static int bd71805_init(struct bd71805 *mfd)
 	u8 id;
 
 	id = bd71805_reg_read(mfd, BD71805_REG_DEVICE);
-	if (id != 0x11) {
-		printk(KERN_ERR "wrong device id:%x!\n", id);
-		return -ENODEV;
+	if (id) {
+		printk(KERN_ERR "BD71805 device id: 0x%X!\n", id);
+		// return -ENODEV;
 	}
 	//  bd71805_dump_regs(mfd);
-
 	return 0;
 }
 
@@ -226,6 +225,7 @@ static struct bd71805_board bd71805_info = {
 	.bd71805_pmic_init_data[BD71805_VODVREF] = &bd71805_init_data,
 	.bd71805_pmic_init_data[BD71805_VOSNVS] = &bd71805_init_data,
 	.bd71805_init = bd71805_init,
+	.irq_base = MXC_BOARD_IRQ_START,
 };
 
 static struct i2c_board_info __initdata bd71805_i2c_device = {

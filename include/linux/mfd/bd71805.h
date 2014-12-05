@@ -202,7 +202,7 @@ struct bd71805;
 struct bd71805_board {
 	struct regulator_init_data *bd71805_pmic_init_data[BD71805_NUM_REGULATOR];
 	/**< regulator initialize data */
-	int	gpio_intr;		/**< gpio connected to bd71805 INTB */
+	int	gpio_intr;		/**< gpio connected to bd71805 INTB, unused */
 	int	irq_base;		/**< bd71805 sub irqs base #  */
 	int	(*bd71805_init) (struct bd71805 * mfd);
 };
