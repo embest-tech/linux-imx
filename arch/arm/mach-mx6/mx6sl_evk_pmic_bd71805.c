@@ -43,20 +43,21 @@
 
 static struct regulator_consumer_supply buck1_consumers[] = {
 	{
-	 .supply = "VDDCORE",
+		.supply = "VDDCORE",
 	 },
 };
 
 static struct regulator_consumer_supply buck2_consumers[] = {
 	{
-	 .supply = "VDDSOC",
+		.supply = "VDDSOC",
 	 },
 };
 
 static struct regulator_consumer_supply buck3_consumers[] = {
 	{
-	 .supply = "DVDD_3V5",
-	 },
+		.supply		= "MICVDD",
+		.dev_name	= "1-001a",
+	},
 };
 
 static struct regulator_consumer_supply buck4_consumers[] = {
@@ -66,56 +67,46 @@ static struct regulator_consumer_supply buck4_consumers[] = {
 };
 
 static struct regulator_consumer_supply ldo1_consumers[] = {
-	{
-	 .supply = "VO1_2V5",
-	 },
+       {
+	.supply = "VGEN5_2V8",
+	},
+
 };
 
 static struct regulator_consumer_supply ldo2_consumers[] = {
+       {
+	.supply = "AUD_1V8",
+	},
 	{
-	 .supply = "AVDD",
-	 .dev_name = "1-001a",
-	 },
+		.supply    = "AVDD",
+		.dev_name	= "1-001a",
+	},
 	{
-	 .supply = "DCVDD",
-	 .dev_name = "1-001a",
-	 },
+		.supply    = "DCVDD",
+		.dev_name	= "1-001a",
+	},
 	{
-	 .supply = "CPVDD",
-	 .dev_name = "1-001a",
-	 },
+		.supply    = "CPVDD",
+		.dev_name	= "1-001a",
+	},
 	{
-	 .supply = "PLLVDD",
-	 .dev_name = "1-001a",
-	 },
+		.supply    = "PLLVDD",
+		.dev_name	= "1-001a",
+	},
 	{
-	 .supply = "DBVDD",
-	 .dev_name = "1-001a",
-	 }
+		.supply		= "DBVDD",
+		.dev_name	= "1-001a",
+	},
+       {
+	.supply = "VGEN4_1V8",
+	}
 };
 
 static struct regulator_consumer_supply ldo3_consumers[] = {
 	{
-	 .supply = "VO3_1V2",
+	 .supply = "VGEN1_1V5",
 	 },
 };
-
-static inline int bd71805_read(struct bd71805 *mfd, u8 reg)
-{
-	u8 val;
-	int err;
-
-	err = mfd->read(mfd, reg, 1, &val);
-	if (err)
-		return err;
-
-	return val;
-}
-
-static inline int bd71805_write(struct bd71805 *mfd, u8 reg, u8 val)
-{
-	return mfd->write(mfd, reg, 1, &val);
-}
 
 void bd71805_dump_regs(struct bd71805 *mfd)
 {
@@ -134,7 +125,7 @@ static int bd71805_init(struct bd71805 *mfd)
 
 	id = bd71805_reg_read(mfd, BD71805_REG_DEVICE);
 	if (id) {
-		printk(KERN_ERR "BD71805 device id: 0x%X!\n", id);
+		printk(KERN_ERR "BD71805 device id: 0x%X\n", id);
 		// return -ENODEV;
 	}
 	//  bd71805_dump_regs(mfd);
@@ -145,6 +136,8 @@ static struct regulator_init_data bd71805_buck1_init = {
 	.constraints = {
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
 			.valid_modes_mask = 0,
+			.boot_on = 1,
+			.always_on = 1,
 			},
 	.consumer_supplies = buck1_consumers,
 	.num_consumer_supplies = ARRAY_SIZE(buck1_consumers),
@@ -154,6 +147,8 @@ static struct regulator_init_data bd71805_buck2_init = {
 	.constraints = {
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
 			.valid_modes_mask = 0,
+			.boot_on = 1,
+			.always_on = 1,
 			},
 	.consumer_supplies = buck2_consumers,
 	.num_consumer_supplies = ARRAY_SIZE(buck2_consumers),
@@ -163,6 +158,8 @@ static struct regulator_init_data bd71805_buck3_init = {
 	.constraints = {
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
 			.valid_modes_mask = 0,
+			.boot_on = 1,
+			.always_on = 1,
 			},
 	.consumer_supplies = buck3_consumers,
 	.num_consumer_supplies = ARRAY_SIZE(buck3_consumers),
@@ -172,6 +169,8 @@ static struct regulator_init_data bd71805_buck4_init = {
 	.constraints = {
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
 			.valid_modes_mask = 0,
+			.boot_on = 1,
+			.always_on = 1,
 			},
 	.consumer_supplies = buck4_consumers,
 	.num_consumer_supplies = ARRAY_SIZE(buck4_consumers),
@@ -182,6 +181,7 @@ static struct regulator_init_data bd71805_ldo1_init = {
 	.constraints = {
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
 			.valid_modes_mask = 0,
+			.always_on = 1,
 			},
 	.consumer_supplies = ldo1_consumers,
 	.num_consumer_supplies = ARRAY_SIZE(ldo1_consumers),
@@ -192,6 +192,7 @@ static struct regulator_init_data bd71805_ldo2_init = {
 	.constraints = {
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
 			.valid_modes_mask = 0,
+			.always_on = 1,
 			},
 	.consumer_supplies = ldo2_consumers,
 	.num_consumer_supplies = ARRAY_SIZE(ldo2_consumers),
@@ -202,6 +203,7 @@ static struct regulator_init_data bd71805_ldo3_init = {
 	.constraints = {
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_STATUS,
 			.valid_modes_mask = 0,
+			.boot_on = 1,
 			},
 	.consumer_supplies = ldo3_consumers,
 	.num_consumer_supplies = ARRAY_SIZE(ldo3_consumers),
@@ -211,6 +213,8 @@ static struct regulator_init_data bd71805_init_data = {
 	.constraints = {
 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
 			.valid_modes_mask = 0,
+			.boot_on = 1,
+			.always_on = 1,
 			},
 };
 

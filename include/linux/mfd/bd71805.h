@@ -257,7 +257,8 @@ int bd71805_irq_exit(struct bd71805 *bd71805);
  */
 static inline int bd71805_reg_read(struct bd71805 *bd71805, u8 reg)
 {
-	int r, val;
+	int r;
+	u8 val;
 
 	r = bd71805->read(bd71805, reg, 1, &val);
 	if (r < 0) {

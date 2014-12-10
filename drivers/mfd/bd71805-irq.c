@@ -67,7 +67,6 @@ static irqreturn_t bd71805_irq(int irq, void *irq_data)
 
 	/* Write the STS register back to clear IRQs we handled */
 	reg = irq_sts & 0xFF;
-	irq_sts >>= 8;
 	bd71805->write(bd71805, BD71805_INT_STS, 1, &reg);
 
 	return IRQ_HANDLED;
@@ -121,7 +120,7 @@ static struct irq_chip bd71805_irq_chip = {
 int bd71805_irq_init(struct bd71805 *bd71805, struct bd71805_board *pdata)
 {
 	int ret, cur_irq;
-	int flags = IRQF_ONESHOT | IRQF_TRIGGER_LOW;
+	int flags = IRQF_ONESHOT;
 	int irq;
 
 	if (!pdata || !pdata->irq_base) {

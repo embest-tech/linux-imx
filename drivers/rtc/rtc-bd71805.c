@@ -248,6 +248,7 @@ static irqreturn_t bd71805_rtc_interrupt(int irq, void *rtc)
 		return IRQ_NONE;
 
 	// printk("IRQ ALARM.\n");
+	// printk("%s() L%d\n", __func__, __LINE__);
 
 	/* Notify RTC core on event */
 	rtc_update_irq(bd_rtc->rtc, 1, events);
