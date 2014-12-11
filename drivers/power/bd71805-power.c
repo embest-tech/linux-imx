@@ -309,12 +309,14 @@ static int bd71805_voltage_to_capacity(int ocv) {
  */
 static int bd71805_get_temp(struct bd71805_power *pwr) {
 	struct bd71805* mfd = pwr->mfd;
-	int temp;
+	int t;
 
-	temp = bd71805_reg_read(mfd, BD71805_REG_VM_BTMP) - 55;
+	t = bd71805_reg_read(mfd, BD71805_REG_VM_BTMP) - 55;
 
-	return temp;
-	// return 25; /* For no Thermister */
+	// battery temperature error
+	t = (t > 150)? 25: t;
+	
+	return t;
 }
 
 /** @brief get battery charge status
