@@ -247,7 +247,7 @@ static irqreturn_t bd71805_rtc_interrupt(int irq, void *rtc)
 	if (ret)
 		return IRQ_NONE;
 
-	// printk("IRQ ALARM.\n");
+	printk("~~~IRQ ALARM.~~~\n");
 	// printk("%s() L%d\n", __func__, __LINE__);
 
 	/* Notify RTC core on event */
@@ -298,9 +298,10 @@ static int bd71805_rtc_probe(struct platform_device *pdev)
 
 	/* Enable RTC alarm interrupt */
 	// ret = regmap_update_bits(bd71805->regmap, BD71805_REG_INT_EN_00, ALMALE, ALMALE);
-	ret = bd71805_update_bits(bd71805, BD71805_REG_INT_EN_00, ALMALE, ALMALE);
+	/* ret = bd71805_update_bits(bd71805, BD71805_REG_INT_EN_00, ALMALE, ALMALE);
 	if (ret < 0)
 		return ret;
+	*/
 
 	/* Disable ALM0 mask */
 	ret = bd71805_reg_write(bd71805, BD71805_REG_ALM0_MASK, 0x77);

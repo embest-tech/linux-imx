@@ -760,7 +760,7 @@ static __init int bd71805_probe(struct platform_device *pdev)
 		if (IS_ERR(rdev)) {
 			dev_err(bd71805->dev,
 				"failed to register %s regulator\n",
-				pdev->name);
+				info->name);
 			err = PTR_ERR(rdev);
 			goto err;
 		}
@@ -769,7 +769,7 @@ static __init int bd71805_probe(struct platform_device *pdev)
 		pmic->rdev[i] = rdev;
 	}
 
-	// bd71805_reg_write(pmic->mfd, BD71805_REG_BUCK1_CONF, BUCK1_RAMPRATE_1P25MV_US);
+	bd71805_reg_write(pmic->mfd, BD71805_REG_BUCK1_CONF, BUCK1_RAMPRATE_1P25MV_US);
 
 	/* err = sysfs_create_group(&pdev->dev.kobj, &gpo_attr_group);
 	if (err != 0) {

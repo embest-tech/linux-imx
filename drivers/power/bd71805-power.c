@@ -18,7 +18,7 @@
 #include <linux/power_supply.h>
 #include <linux/mfd/bd71805.h>
 
-#define JITTER_DEFAULT		50		/* hope 50ms is enough */
+#define JITTER_DEFAULT		3000		/* hope 50ms is enough */
 #define JITTER_REPORT_CAP	10000		/* 30 seconds */
 #define BD71805_BATTERY_CAP	(battery_capacity * 360 / 1000)	/* [mAh]/1000*360[A/10S] for New ALG */
 #define MAX_VOLTAGE		4200000
@@ -311,10 +311,10 @@ static int bd71805_get_temp(struct bd71805_power *pwr) {
 	struct bd71805* mfd = pwr->mfd;
 	int t;
 
-	t = bd71805_reg_read(mfd, BD71805_REG_VM_BTMP) - 55;
+	t = 200 - (int)bd71805_reg_read(mfd, BD71805_REG_VM_BTMP);
 
 	// battery temperature error
-	t = (t > 150)? 25: t;
+	t = (t > 200)? 200: t;
 	
 	return t;
 }
@@ -810,7 +810,7 @@ static ssize_t bd71805_sysfs_show_registers(struct device *dev,
 	ssize_t ret = 0;
 	int i;
 
-	if (pwr->reg_index > 0) {
+	if (pwr->reg_index >= 0) {
 		ret += bd71805_sysfs_print_reg(pwr, pwr->reg_index, buf + ret);
 	} else {
 		for (i = 0; i <= BD71805_MAX_REGISTER; i++) {

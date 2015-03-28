@@ -181,7 +181,6 @@ int bd71805_update_bits(struct bd71805 *bd71805, u8 reg, u8 mask, u8 val) {
 	if (ret < 0) {
 		printk("%s L%d err=%d reg=0x%X mask=0x%X val=0x%X\n", __func__, __LINE__, ret, reg, mask, val);
 	} */
-	printk("~\n");
 	return ret;
 }
 

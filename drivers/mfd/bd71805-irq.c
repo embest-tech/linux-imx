@@ -42,17 +42,17 @@ static irqreturn_t bd71805_irq(int irq, void *irq_data)
 {
 	struct bd71805 *bd71805 = irq_data;
 	u32 irq_sts;
-	u32 irq_mask;
+	// u32 irq_mask;
 	u8 reg;
 	int i;
 
 	bd71805->read(bd71805, BD71805_INT_STS, 1, &reg);
 	irq_sts = reg;
 
-	bd71805->read(bd71805, BD71805_INT_MSK, 1, &reg);
+	/* bd71805->read(bd71805, BD71805_INT_MSK, 1, &reg);
 	irq_mask = reg;
 
-	irq_sts &= irq_mask;
+	irq_sts &= irq_mask; */
 
 	if (!irq_sts)
 		return IRQ_NONE;
@@ -66,8 +66,9 @@ static irqreturn_t bd71805_irq(int irq, void *irq_data)
 	}
 
 	/* Write the STS register back to clear IRQs we handled */
-	reg = irq_sts & 0xFF;
+	/* reg = irq_sts & 0xFF;
 	bd71805->write(bd71805, BD71805_INT_STS, 1, &reg);
+	*/
 
 	return IRQ_HANDLED;
 }
@@ -82,7 +83,7 @@ static void bd71805_irq_lock(struct irq_data *data)
 static void bd71805_irq_sync_unlock(struct irq_data *data)
 {
 	struct bd71805 *bd71805 = irq_data_get_irq_chip_data(data);
-	u32 reg_mask;
+	/* u32 reg_mask;
 	u8 reg;
 
 	bd71805->read(bd71805, BD71805_INT_MSK, 1, &reg);
@@ -91,7 +92,7 @@ static void bd71805_irq_sync_unlock(struct irq_data *data)
 	if (bd71805->irq_mask != reg_mask) {
 		reg = bd71805->irq_mask & 0xFF;
 		bd71805->write(bd71805, BD71805_INT_MSK, 1, &reg);
-	}
+	} */
 	mutex_unlock(&bd71805->irq_lock);
 }
 
@@ -122,6 +123,7 @@ int bd71805_irq_init(struct bd71805 *bd71805, struct bd71805_board *pdata)
 	int ret, cur_irq;
 	int flags = IRQF_ONESHOT;
 	int irq;
+	int i;
 
 	if (!pdata || !pdata->irq_base) {
 		dev_warn(bd71805->dev, "No interrupt support, no IRQ base\n");
@@ -137,6 +139,14 @@ int bd71805_irq_init(struct bd71805 *bd71805, struct bd71805_board *pdata)
 	bd71805->irq_mask = 0x0;
 
 	mutex_init(&bd71805->irq_lock);
+
+	/* clear all interrupt */
+	for (i = BD71805_REG_INT_STAT_00; i < BD71805_REG_INT_STAT_12; i++) {
+		u8 reg = 0x00;
+
+		bd71805->read(bd71805, i + 1, 1, &reg);
+		bd71805->write(bd71805, i + 1, 1, &reg);
+	}
 
 	bd71805->irq_base = pdata->irq_base;
 	bd71805->irq_num = BD71805_NUM_IRQ;
@@ -162,7 +172,7 @@ int bd71805_irq_init(struct bd71805 *bd71805, struct bd71805_board *pdata)
 	ret = request_threaded_irq(irq, NULL, bd71805_irq, flags,
 				   "bd71805", bd71805);
 
-	irq_set_irq_type(irq, IRQ_TYPE_LEVEL_LOW);
+	irq_set_irq_type(irq, IRQ_TYPE_EDGE_FALLING);
 
 	if (ret != 0)
 		dev_err(bd71805->dev, "Failed to request IRQ %d: %d\n", irq, ret);
