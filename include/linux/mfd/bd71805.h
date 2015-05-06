@@ -67,6 +67,7 @@
 #define BD71805_REG_BAT_STAT		0x36
 #define BD71805_REG_VBUS_STAT		0x37
 #define BD71805_REG_BAT_TEMP		0x3B
+#define BD71805_REG_DCIN_CLPS		0x3E
 #define BD71805_REG_VSYS_MAX		0x40
 #define BD71805_REG_CHG_SET1		0x42
 #define BD71805_REG_CHG_SET2		0x43
@@ -84,8 +85,9 @@
 #define BD71805_REG_VM_VBATLOAD_PRE	0x62
 #define BD71805_REG_VM_IBATLOAD_PST	0x64
 #define BD71805_REG_VM_VBATLOAD_PST	0x66
-#define BD71805_REG_CC_BATCAP_U		0x6C
-#define BD71805_REG_CC_BATCAP_L		0x6D
+#define BD71805_REG_CC_CTRL		0x6D
+#define BD71805_REG_CC_BATCAP_U		0x6E
+#define BD71805_REG_CC_BATCAP_L		0x6F
 #define BD71805_REG_CC_STAT		0x74
 #define BD71805_REG_CC_CCNTD_3		0x75
 #define BD71805_REG_CC_CCNTD_2		0x76
@@ -119,6 +121,7 @@
 #define VBAT_OV					0x08
 #define DBAT_DET				0x01
 
+/* BD71805_REG_VBUS_STAT bits */
 #define VBUS_DET				0x01
 
 #define BUCK1_RAMPRATE_10MV_US			0x0
@@ -161,9 +164,10 @@ enum {
 /* BD71805_REG_HOUR bits */
 #define HOUR_24HOUR				0x80
 
-/* BD71805_REG_CC_CCNTD_3 bits */
+/* BD71805_REG_CC_CTRL bits */
 #define CCNTRST					0x80
 #define CCNTENB					0x40
+#define CCCALIB					0x20
 
 /* BD71805_REG_CHG_SET1 bits */
 #define WDT_AUTO				0x40
@@ -326,3 +330,4 @@ struct bd71805_gpo_plat_data {
 };
 
 #endif /* __LINUX_MFD_BD71805_H */
+
