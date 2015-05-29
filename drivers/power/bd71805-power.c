@@ -17,17 +17,21 @@
 #include <linux/interrupt.h>
 #include <linux/power_supply.h>
 #include <linux/mfd/bd71805.h>
+#include <linux/delay.h>
 
-#define JITTER_DEFAULT		3000		/* hope 50ms is enough */
-#define JITTER_REPORT_CAP	10000		/* 30 seconds */
-#define BD71805_BATTERY_CAP	(battery_capacity * 360 / 1000)	/* [mAh]/1000*360[A/10S] for New ALG */
+#define JITTER_DEFAULT		3000		/* hope 3s is enough */
+#define JITTER_REPORT_CAP	10000		/* 10 seconds */
+#define BD71805_BATTERY_CAP	mAh_A10s(battery_capacity)
 #define MAX_VOLTAGE		ocv_table[0]
 #define MIN_VOLTAGE		ocv_table[ARRAY_SIZE(ocv_table) - 1]
-#define MAX_CURRENT		1500
+#define MAX_CURRENT		1500000		/* uA */
 #define AC_NAME			"bd71805_ac"
 #define BAT_NAME		"bd71805_bat"
-#define BD71805_BATTERY_FULL	97
+#define BD71805_BATTERY_FULL	100
 
+
+#define A10s_mAh(s)		((s) * 1000 / 360)
+#define mAh_A10s(m)		((m) * 360 / 1000)
 static unsigned int battery_capacity;
 
 
@@ -103,6 +107,7 @@ struct bd71805_power {
 	int	charger_online;			/**< charger connect */
 	int	vcell;				/**< battery voltage */
 	int	rpt_status;			/**< battery status report */
+	int	prev_rpt_status;		/**< previous battery status report */
 	int	bat_health;			/**< battery health */
 	int	full_cap;			/**< battery capacity */
 	int	curr;				/**< battery current */
@@ -229,7 +234,6 @@ static int bd71805_get_init_bat_stat(struct bd71805_power *pwr) {
 static int bd71805_get_vbat_curr(struct bd71805_power *pwr, int *vcell, int *curr) {
 	struct bd71805* mfd = pwr->mfd;
 	int tmp_vcell, tmp_curr, tmp_curr2, i;
-	int r;
 
 	tmp_vcell = 0;
 	tmp_curr = 0;
@@ -244,13 +248,6 @@ static int bd71805_get_vbat_curr(struct bd71805_power *pwr, int *vcell, int *cur
 	tmp_vcell = tmp_vcell / 10;
 	tmp_curr = tmp_curr / 10;
 
-	
-	r = bd71805_reg_read(pwr->mfd, BD71805_REG_CHG_STATE);
-	if (r >= 0 && tmp_curr > 0) {
-		// voltage increment caused by battery inner resistor
-		if (r == 3) tmp_vcell -= 100;
-		else if (r == 2) tmp_vcell -= 50;
-	}
 	*vcell = tmp_vcell * 1000;
 	*curr = tmp_curr * 1000;
 
@@ -371,10 +368,40 @@ static int bd71805_charge_status(struct bd71805_power *pwr)
 		break;	
 	}
 
+	if ((pwr->prev_rpt_status != POWER_SUPPLY_STATUS_FULL) && (pwr->rpt_status == POWER_SUPPLY_STATUS_FULL)) {
+		/* Stop Coulomb Counter */
+		bd71805_clear_bits(pwr->mfd, BD71805_REG_CC_CTRL, CCNTENB);
+
+		bd71805_reg_write16(pwr->mfd, BD71805_REG_CC_CCNTD_3, ((pwr->full_cap + pwr->full_cap / 200) & 0x1FFFUL));
+
+		pwr->coulomb_cnt = bd71805_reg_read32(pwr->mfd, BD71805_REG_CC_CCNTD_3) & 0x1FFFFFFFUL;
+		dev_info(pwr->dev, "Reset Coulomb Counter at POWER_SUPPLY_STATUS_FULL\n");
+		dev_info(pwr->dev, "CC_CCNTD = %d\n", pwr->coulomb_cnt);
+
+		/* Start Coulomb Counter */
+		bd71805_set_bits(pwr->mfd, BD71805_REG_CC_CTRL, CCNTENB);
+	}
+
+	pwr->prev_rpt_status = pwr->rpt_status;
+
 	return ret;
 }
 
-static int bd71805_get_vcell(struct bd71805_power* pwr);
+static int bd71805_calib_voltage(struct bd71805_power* pwr, int* ocv) {
+	int r, curr, volt;
+
+	bd71805_get_vbat_curr(pwr, &volt, &curr);
+
+	r = bd71805_reg_read(pwr->mfd, BD71805_REG_CHG_STATE);
+	if (r >= 0 && curr > 0) {
+		// voltage increment caused by battery inner resistor
+		if (r == 3) volt -= 100 * 1000;
+		else if (r == 2) volt -= 50 * 1000;
+	}
+	*ocv = volt;
+
+	return 0;
+}
 
 /** @brief set initial coulomb counter value from battery voltage
  * @param pwr power device
@@ -391,8 +418,7 @@ static int calibration_coulomb_counter(struct bd71805_power* pwr) {
 	ocv = (pwr->hw_ocv1 >= pwr->hw_ocv2)? pwr->hw_ocv1: pwr->hw_ocv2;
 	dev_info(pwr->dev, "ocv %d\n", ocv);
 #else
-	bd71805_get_vcell(pwr);
-	ocv = pwr->vcell;
+	bd71805_calib_voltage(pwr, &ocv);
 #endif
 	/* Get init soc from ocv/soc table */
 	soc = bd71805_voltage_to_capacity(ocv);
@@ -485,6 +511,7 @@ static int bd71805_get_online(struct bd71805_power* pwr) {
 static int bd71805_init_hardware(struct bd71805_power *pwr) {
 	struct bd71805 *mfd = pwr->mfd;
 	int r;
+	int i;
 
 	r = bd71805_reg_write(mfd, BD71805_REG_DCIN_CLPS, 0x00);
 
@@ -495,10 +522,23 @@ static int bd71805_init_hardware(struct bd71805_power *pwr) {
 	bd71805_reg_write(mfd, BD71805_REG_TEST_MODE, TEST_SEQ_01);
 	bd71805_reg_write(mfd, BD71805_REG_TEST_MODE, TEST_SEQ_02);
 	bd71805_reg_write(mfd, BD71805_REG_TEST_MODE, TEST_SEQ_03);
+
 	r = bd71805_reg_read(mfd, BD71805_REG_VSYS_MAX);
 	bd71805_reg_write(mfd, BD71805_REG_TEST_MODE, TEST_SEQ_00);
+
+#if 0
+	for (i = 0; i < 300; i++) {
+		r = bd71805_reg_read(pwr->mfd, BD71805_REG_BAT_STAT);
+		if (r >= 0 && (r & BAT_DET_DONE)) {
+			break;
+		}
+		msleep(5);
+	}
+#endif
 	if ((r & 0x01) == 0x00) {
+	//if (r & BAT_DET) {
 		/* Init HW, when the battery is inserted. */
+
 		bd71805_reg_write(mfd, BD71805_REG_TEST_MODE, TEST_SEQ_01);
 		bd71805_reg_write(mfd, BD71805_REG_TEST_MODE, TEST_SEQ_02);
 		bd71805_reg_write(mfd, BD71805_REG_TEST_MODE, TEST_SEQ_03);
@@ -699,10 +739,19 @@ static int bd71805_battery_get_property(struct power_supply *psy,
 		val->intval = pwr->vcell;
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY:
-	case POWER_SUPPLY_PROP_CHARGE_NOW:
 		val->intval = (pwr->coulomb_cnt >> 16) * 100 /  pwr->full_cap;
 		if (val->intval > 100) {
 			val->intval = 100;
+		}
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_NOW:
+		{
+		u32 t;
+
+		t = pwr->coulomb_cnt >> 16;
+		t = A10s_mAh(t);
+		if (t > battery_capacity) t = battery_capacity;
+		val->intval = t * 1000;		/* uA to report */
 		}
 		break;
 	case POWER_SUPPLY_PROP_PRESENT:
