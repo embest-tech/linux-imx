@@ -110,8 +110,8 @@ struct bd71805_power {
 	int	prev_rpt_status;		/**< previous battery status report */
 	int	bat_health;			/**< battery health */
 	int	full_cap;			/**< battery capacity */
-	int	curr;				/**< battery current */
-	int	curr_sar;			/**< battery current from DS-ADC */
+	int	curr;				/**< battery current from DS-ADC */
+	int	curr_sar;			/**< battery current from VM_IBAT */
 	int	temp;				/**< battery tempature */
 	u32	coulomb_cnt;			/**< Coulomb Counter */
 	int	state_machine;			/**< initial-procedure state machine */
@@ -127,6 +127,15 @@ enum {
  *  @param reg	 register address of lower register
  *  @return register value
  */
+#ifdef __BD71805_REGMAP_H__
+static u16 bd71805_reg_read16(struct bd71805* mfd, int reg) {
+	u16 v;
+
+	v = (u16)bd71805_reg_read(mfd, reg) << 8;
+	v |= (u16)bd71805_reg_read(mfd, reg + 1) << 0;
+	return v;
+}
+#else
 static u16 bd71805_reg_read16(struct bd71805* mfd, int reg) {
 	union {
 		u16 long_type;
@@ -140,6 +149,7 @@ static u16 bd71805_reg_read16(struct bd71805* mfd, int reg) {
 	}
 	return be16_to_cpu(u.long_type);
 }
+#endif
 
 /** @brief write a register group once
  * @param mfd bd71805 device
@@ -157,7 +167,11 @@ static int bd71805_reg_write16(struct bd71805 *mfd, int reg, u16 val) {
 
 	u.long_type = cpu_to_be16(val);
 	// printk("write16 0x%.4X 0x%.4X\n", val, u.long_type);
+#ifdef __BD71805_REGMAP_H__
+	r = mfd->write(mfd, reg, sizeof u.chars, u.chars);
+#else
 	r = regmap_bulk_write(mfd->regmap, reg, u.chars, sizeof u.chars);
+#endif
 	if (r) {
 		return -1;
 	}
@@ -176,13 +190,18 @@ static int bd71805_reg_read32(struct bd71805 *mfd, int reg) {
 	} u;
 	int r;
 
+#ifdef __BD71805_REGMAP_H__
+	r = mfd->read(mfd, reg, sizeof u.chars, u.chars);
+#else
 	r = regmap_bulk_read(mfd->regmap, reg, u.chars, sizeof u.chars);
+#endif
 	if (r) {
 		return -1;
 	}
 	return be32_to_cpu(u.long_type);
 }
 
+#if 0
 /** @brief write quad register once
  * @param mfd bd71805 device
  * @param reg register address of lower register
@@ -224,6 +243,7 @@ static int bd71805_get_init_bat_stat(struct bd71805_power *pwr) {
 
 	return 0;
 }
+#endif
 
 /** @brief get battery average voltage and current
  * @param pwr power device
@@ -303,12 +323,14 @@ static int bd71805_voltage_to_capacity(int ocv) {
  */
 static int bd71805_get_temp(struct bd71805_power *pwr) {
 	struct bd71805* mfd = pwr->mfd;
-	int temp;
+	int t;
 
-	temp = 200 - bd71805_reg_read(mfd, BD71805_REG_VM_BTMP);
+	t = 200 - (int)bd71805_reg_read(mfd, BD71805_REG_VM_BTMP);
 
-	return temp;
-	// return 25; /* For no Thermister */
+	// battery temperature error
+	t = (t > 200)? 200: t;
+	
+	return t;
 }
 
 /** @brief get battery charge status
@@ -420,9 +442,10 @@ static int calibration_coulomb_counter(struct bd71805_power* pwr) {
 #else
 	bd71805_calib_voltage(pwr, &ocv);
 #endif
+
 	/* Get init soc from ocv/soc table */
 	soc = bd71805_voltage_to_capacity(ocv);
-	dev_info(pwr->dev, "soc %d[0.1%]\n", soc);
+	dev_info(pwr->dev, "soc %d[0.1%%]\n", soc);
 
 	bcap = pwr->full_cap * soc / 1000;
 
@@ -511,7 +534,6 @@ static int bd71805_get_online(struct bd71805_power* pwr) {
 static int bd71805_init_hardware(struct bd71805_power *pwr) {
 	struct bd71805 *mfd = pwr->mfd;
 	int r;
-	int i;
 
 	r = bd71805_reg_write(mfd, BD71805_REG_DCIN_CLPS, 0x00);
 
@@ -870,7 +892,7 @@ static ssize_t bd71805_sysfs_show_registers(struct device *dev,
 	ssize_t ret = 0;
 	int i;
 
-	if (pwr->reg_index > 0) {
+	if (pwr->reg_index >= 0) {
 		ret += bd71805_sysfs_print_reg(pwr, pwr->reg_index, buf + ret);
 	} else {
 		for (i = 0; i <= BD71805_MAX_REGISTER; i++) {
@@ -1033,4 +1055,3 @@ MODULE_AUTHOR("Tony Luo <luofc@embest-tech.com>");
 MODULE_AUTHOR("Peter Yang <yanglsh@embest-tech.com>");
 MODULE_DESCRIPTION("BD71805MWV Battery Charger Power driver");
 MODULE_LICENSE("GPL");
-
