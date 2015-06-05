@@ -452,7 +452,7 @@ static int calibration_coulomb_counter(struct bd71805_power* pwr) {
 	bd71805_reg_write16(pwr->mfd, BD71805_REG_CC_CCNTD_3, ((bcap + bcap / 200) & 0x1FFFUL));
 
 	pwr->coulomb_cnt = bd71805_reg_read32(pwr->mfd, BD71805_REG_CC_CCNTD_3) & 0x1FFFFFFFUL;
-	dev_info(pwr->dev, "CC_CCNTD = %d\n", pwr->coulomb_cnt);
+	dev_info(pwr->dev, "%s() CC_CCNTD = %d\n", __func__, pwr->coulomb_cnt);
 
 	/* Start canceling offset of the DS ADC. This needs 1 second at least */
 	bd71805_set_bits(pwr->mfd, BD71805_REG_CC_CTRL, CCCALIB);
@@ -535,7 +535,7 @@ static int bd71805_init_hardware(struct bd71805_power *pwr) {
 	struct bd71805 *mfd = pwr->mfd;
 	int r;
 
-	r = bd71805_reg_write(mfd, BD71805_REG_DCIN_CLPS, 0x00);
+	r = bd71805_reg_write(mfd, BD71805_REG_DCIN_CLPS, 0x36);
 
 #define TEST_SEQ_00		0x00
 #define TEST_SEQ_01		0x76
@@ -595,7 +595,7 @@ static int bd71805_init_hardware(struct bd71805_power *pwr) {
 	}
 
 	pwr->coulomb_cnt = bd71805_reg_read32(mfd, BD71805_REG_CC_CCNTD_3) & 0x1FFFFFFFUL;
-	dev_info(pwr->dev, "CC_CCNTD = %d\n", pwr->coulomb_cnt);
+	dev_info(pwr->dev, "%s() CC_CCNTD = %d\n", __func__, pwr->coulomb_cnt);
 
 	pwr->curr = 0;
 	pwr->curr_sar = 0;
