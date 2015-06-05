@@ -746,7 +746,7 @@ static __init int bd71805_probe(struct platform_device *pdev)
 		if (IS_ERR(rdev)) {
 			dev_err(bd71805->dev,
 				"failed to register %s regulator\n",
-				info->name);
+				pdev->name);
 			err = PTR_ERR(rdev);
 			goto err;
 		}
