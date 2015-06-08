@@ -514,10 +514,16 @@ static int bd71805_get_online(struct bd71805_power* pwr) {
 	r = bd71805_reg_read(pwr->mfd, BD71805_REG_VM_VTH);
 	pwr->bat_online = (r > TS_THRESHOLD_VOLT);
 #else
+#if 0
 	r = bd71805_reg_read(pwr->mfd, BD71805_REG_BAT_STAT);
 	if (r >= 0 && (r & BAT_DET_DONE)) {
 		pwr->bat_online = (r & BAT_DET) != 0;
 	}
+#else
+#define BAT_OPEN	0x7
+	r = bd71805_reg_read(pwr->mfd, BD71805_REG_BAT_TEMP);
+	pwr->bat_online = (r != BAT_OPEN);
+#endif
 #endif	
 	r = bd71805_reg_read(pwr->mfd, BD71805_REG_VBUS_STAT);
 	if (r >= 0) {
