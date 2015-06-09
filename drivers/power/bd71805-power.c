@@ -662,6 +662,39 @@ static void bd_work_callback(struct work_struct *work)
 	schedule_delayed_work(&pwr->bd_work, msecs_to_jiffies(JITTER_DEFAULT));
 }
 
+/**@brief bd71805 power interrupt
+ * @param irq system irq
+ * @param pwrsys bd71805 power device of system
+ * @retval IRQ_HANDLED success
+ * @retval IRQ_NONE error
+ */
+static irqreturn_t bd71805_power_interrupt(int irq, void *pwrsys)
+{
+	struct device *dev = pwrsys;
+	unsigned long events = 0;
+	struct bd71805 *mfd = dev_get_drvdata(dev->parent);
+	struct bd71805_power *pwr = dev_get_drvdata(dev);
+	int reg, r;
+
+	reg = bd71805_reg_read(mfd, BD71805_REG_INT_STAT_03);
+	if (reg < 0)
+		return IRQ_NONE;
+
+	// printk("INT_STAT_03 = 0x%.2X\n", reg);
+
+	r = bd71805_reg_write(mfd, BD71805_REG_INT_STAT_03, reg);
+	if (r)
+		return IRQ_NONE;
+
+	if (reg & DCIN_MON_DET) {
+		printk("\n~~~DCIN removed\n");
+	} else if (reg & DCIN_MON_RES) {
+		printk("\n~~~DCIN inserted\n");
+	}
+
+	return IRQ_HANDLED;
+}
+
 /** @brief get property of power supply ac
  *  @param psy power supply deivce
  *  @param psp property to get
@@ -938,7 +971,7 @@ static int __init bd71805_power_probe(struct platform_device *pdev)
 {
 	struct bd71805 *bd71805 = dev_get_drvdata(pdev->dev.parent);
 	struct bd71805_power *pwr;
-	int ret;
+	int irq, ret;
 
 	pwr = kzalloc(sizeof(*pwr), GFP_KERNEL);
 	if (pwr == NULL)
@@ -980,6 +1013,19 @@ static int __init bd71805_power_probe(struct platform_device *pdev)
 	if (ret) {
 		dev_err(&pdev->dev, "failed to register ac: %d\n", ret);
 		goto fail_register_ac;
+	}
+
+	irq  = platform_get_irq(pdev, 0);
+	if (irq <= 0) {
+		dev_warn(&pdev->dev, "platform irq error # %d\n", irq);
+		return -ENXIO;
+	}
+
+	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
+		bd71805_power_interrupt, IRQF_TRIGGER_LOW | IRQF_EARLY_RESUME,
+		dev_name(&pdev->dev), &pdev->dev);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "IRQ %d is not free.\n", irq);
 	}
 
 	ret = sysfs_create_group(&pwr->bat.dev->kobj, &bd71805_sysfs_attr_group);

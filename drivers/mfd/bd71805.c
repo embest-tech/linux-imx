@@ -28,9 +28,17 @@
 /** @brief bd71805 irq resource */
 static struct resource rtc_resources[] = {
 	{
-		.start  = BD71805_IRQ_ALARM,
-		.end    = BD71805_IRQ_ALARM,
+		.start  = BD71805_IRQ_ALARM_12,
+		.end    = BD71805_IRQ_ALARM_12,
 		.flags  = IORESOURCE_IRQ,
+	}
+};
+
+static struct resource power_resources[] = {
+	{
+		.start	= BD71805_IRQ_DCIN_03,
+		.end	= BD71805_IRQ_DCIN_03,
+		.flags	= IORESOURCE_IRQ,
 	}
 };
 
@@ -41,6 +49,8 @@ static struct mfd_cell bd71805_mfd_cells[] = {
 	},
 	{
 		.name = "bd71805-power",
+		.num_resources = ARRAY_SIZE(power_resources),
+		.resources = &power_resources[0],
 	},
 	{
 		.name = "bd71805-gpo",
@@ -54,38 +64,53 @@ static struct mfd_cell bd71805_mfd_cells[] = {
 
 /** @brief bd71805 irqs */
 static const struct regmap_irq bd71805_irqs[] = {
-	/* INT_EN_0 */
-	[BD71805_IRQ_ALARM] = {
-		.mask = BD71805_INT_EN_00_ALMAST_MASK,
-		.reg_offset = 0,
+	[BD71805_IRQ_BUCK_01] = {
+		.mask = BD71805_INT_EN_01_BUCKAST_MASK,
+		.reg_offset = 1,
 	},
-	[BD71805_IRQ_TEMPERATURE] = {
-		.mask = BD71805_INT_EN_00_TMPAST_MASK,
-		.reg_offset = 0,
+	[BD71805_IRQ_DCIN_02] = {
+		.mask = BD71805_INT_EN_02_DCINAST_MASK,
+		.reg_offset = 2,
 	},
-	[BD71805_IRQ_BAT_MON] = {
-		.mask = BD71805_INT_EN_00_BMONAST_MASK,
-		.reg_offset = 0,
+	[BD71805_IRQ_DCIN_03] = {
+		.mask = BD71805_INT_EN_03_DCINAST_MASK,
+		.reg_offset = 3,
 	},
-	[BD71805_IRQ_THERM] = {
-		.mask = BD71805_INT_EN_00_BATST_MASK,
-		.reg_offset = 0,
+	[BD71805_IRQ_VSYS_04] = {
+		.mask = BD71805_INT_EN_04_VSYSAST_MASK,
+		.reg_offset = 4,
 	},
-	[BD71805_IRQ_CHARGE] = {
-		.mask = BD71805_INT_EN_00_CHGAST_MASK,
-		.reg_offset = 0,
+	[BD71805_IRQ_CHARGE_05] = {
+		.mask = BD71805_INT_EN_05_CHGAST_MASK,
+		.reg_offset = 5,
 	},
-	[BD71805_IRQ_VSYS] = {
-		.mask = BD71805_INT_EN_00_VSYSAST_MASK,
-		.reg_offset = 0,
+	[BD71805_IRQ_BAT_06] = {
+		.mask = BD71805_INT_EN_06_BATAST_MASK,
+		.reg_offset = 6,
 	},
-	[BD71805_IRQ_DCIN] = {
-		.mask = BD71805_INT_EN_00_DCINAST_MASK,
-		.reg_offset = 0,
+	[BD71805_IRQ_BAT_MON_07] = {
+		.mask = BD71805_INT_EN_07_BMONAST_MASK,
+		.reg_offset = 7,
 	},
-	[BD71805_IRQ_BUCK] = {
-		.mask = BD71805_INT_EN_00_BUCKAST_MASK,
-		.reg_offset = 0,
+	[BD71805_IRQ_BAT_MON_08] = {
+		.mask = BD71805_INT_EN_08_BMONAST_MASK,
+		.reg_offset = 8,
+	},
+	[BD71805_IRQ_BAT_MON_09] = {
+		.mask = BD71805_INT_EN_09_BMONAST_MASK,
+		.reg_offset = 9,
+	},
+	[BD71805_IRQ_BAT_MON_10] = {
+		.mask = BD71805_INT_EN_10_BMONAST_MASK,
+		.reg_offset = 10,
+	},
+	[BD71805_IRQ_TEMPERATURE_11] = {
+		.mask = BD71805_INT_EN_11_TMPAST_MASK,
+		.reg_offset = 11,
+	},
+	[BD71805_IRQ_ALARM_12] = {
+		.mask = BD71805_INT_EN_12_ALMAST_MASK,
+		.reg_offset = 12,
 	},
 };
 
@@ -94,12 +119,12 @@ static struct regmap_irq_chip bd71805_irq_chip = {
 	.name = "bd71805",
 	.irqs = bd71805_irqs,
 	.num_irqs = ARRAY_SIZE(bd71805_irqs),
-	.num_regs = 1,
+	.num_regs = 13,
 	.irq_reg_stride = 1,
 	.status_base = BD71805_REG_INT_STAT_00,
 	.mask_base = BD71805_REG_INT_EN_00,
 	.mask_invert = true,
-	.ack_base = BD71805_REG_INT_STAT_00,
+	// .ack_base = BD71805_REG_INT_STAT_00,
 };
 
 /** @brief bd71805 irq initialize 
