@@ -146,7 +146,7 @@ static int bd71805_irq_init(struct bd71805 *bd71805, struct bd71805_board* bdinf
 
 	bd71805->chip_irq = irq;
 	ret = regmap_add_irq_chip(bd71805->regmap, bd71805->chip_irq,
-		IRQF_ONESHOT, bdinfo->irq_base,
+		IRQF_ONESHOT | IRQF_TRIGGER_FALLING, bdinfo->irq_base,
 		&bd71805_irq_chip, &bd71805->irq_data);
 	if (ret < 0)
 		dev_warn(bd71805->dev, "Failed to add irq_chip %d\n", ret);
