@@ -38,6 +38,21 @@ static inline int irq_to_bd71805_irq(struct bd71805 *bd71805, int irq)
  * it's rare to get lots of interrupts firing simultaneously so try to
  * minimise I/O.
  */
+static int bd71805_int_masks[] = {
+	BD71805_INT_EN_01_BUCKAST_MASK,
+	BD71805_INT_EN_02_DCINAST_MASK,
+	BD71805_INT_EN_03_DCINAST_MASK,
+	BD71805_INT_EN_04_VSYSAST_MASK,
+	BD71805_INT_EN_05_CHGAST_MASK,
+	BD71805_INT_EN_06_BATAST_MASK,
+	BD71805_INT_EN_07_BMONAST_MASK,
+	BD71805_INT_EN_08_BMONAST_MASK,
+	BD71805_INT_EN_09_BMONAST_MASK,
+	BD71805_INT_EN_10_BMONAST_MASK,
+	BD71805_INT_EN_11_TMPAST_MASK,
+	BD71805_INT_EN_12_ALMAST_MASK,
+};
+
 static irqreturn_t bd71805_irq(int irq, void *irq_data)
 {
 	struct bd71805 *bd71805 = irq_data;
@@ -47,23 +62,50 @@ static irqreturn_t bd71805_irq(int irq, void *irq_data)
 	int i;
 
 	bd71805->read(bd71805, BD71805_INT_STS, 1, &reg);
-	irq_sts = reg;
+	// 8b -> 12b
+	irq_sts =  (reg & 0x80) >> 7;			// 7 -> 0
+	irq_sts |= (reg & 0x40)? (0x03 << 1): 0;	// 6 -> 1,2
+	irq_sts |= (reg & 0x20)	>> 2;			// 5 -> 3
+	irq_sts |= (reg & 0x10) >> 0;			// 4 -> 4
+	irq_sts |= (reg & 0x08)	<< 2;			// 3 -> 5
+	irq_sts |= (reg & 0x04)? (0x0F << 6): 0;	// 2 -> 6,7,8,9
+	irq_sts |= (reg & 0x02) << 9;			// 1 -> 10
+	irq_sts |= (reg & 0x01) << 11;			// 0 -> 11
+	
 
 	/* bd71805->read(bd71805, BD71805_INT_MSK, 1, &reg);
-	irq_mask = reg;
-
-	irq_sts &= irq_mask; */
+	irq_mask = reg; */
+	// irq_sts &= bd71805->irq_mask;
 
 	if (!irq_sts)
 		return IRQ_NONE;
+
+	// printk("irq_sts = 0x%.4X\n", irq_sts);
 
 	for (i = 0; i < bd71805->irq_num; i++) {
 
 		if (!(irq_sts & (1 << i)))
 			continue;
 
+		bd71805->read(bd71805, BD71805_INT_STS + 1 + i, 1, &reg);
+		if ((reg & bd71805_int_masks[i]) == 0) {
+			// printk("reg %d = 0x%.2X\n", i, reg);
+			continue;
+		}
+
+		if (!(bd71805->irq_mask & (1 << i))) {
+			// clear the interrupt uncared
+			// printk("clear uncared int %d\n", i);
+			bd71805->write(bd71805, BD71805_INT_STS + 1 + i, 1, &reg);
+			continue;
+		}
+
 		handle_nested_irq(bd71805->irq_base + i);
 	}
+
+
+	// Now, clear sub status register INT_STAT_01 to INT_STAT_12
+	// in the specific driver interrupt.
 
 	/* Write the STS register back to clear IRQs we handled */
 	/* reg = irq_sts & 0xFF;
@@ -83,8 +125,9 @@ static void bd71805_irq_lock(struct irq_data *data)
 static void bd71805_irq_sync_unlock(struct irq_data *data)
 {
 	struct bd71805 *bd71805 = irq_data_get_irq_chip_data(data);
-	/* u32 reg_mask;
 	u8 reg;
+#if 0
+	u32 reg_mask;
 
 	bd71805->read(bd71805, BD71805_INT_MSK, 1, &reg);
 	reg_mask = reg;
@@ -92,7 +135,26 @@ static void bd71805_irq_sync_unlock(struct irq_data *data)
 	if (bd71805->irq_mask != reg_mask) {
 		reg = bd71805->irq_mask & 0xFF;
 		bd71805->write(bd71805, BD71805_INT_MSK, 1, &reg);
-	} */
+	}
+#else
+	int i;
+
+	for (i = 0; i < bd71805->irq_num; i++) {
+		int c1, c2;
+
+		bd71805->read(bd71805, BD71805_INT_MSK + 1 + i, 1, &reg);
+		c1 = (reg & bd71805_int_masks[i]) != 0;
+		c2 = !!(bd71805->irq_mask & (1 << i));
+
+		if (c1 != c2) {
+			reg &= ~bd71805_int_masks[i];
+			if (c2) {
+				reg |= bd71805_int_masks[i];
+			}
+			bd71805->write(bd71805, BD71805_INT_MSK + 1 + i, 1, &reg);
+		}
+	}
+#endif
 	mutex_unlock(&bd71805->irq_lock);
 }
 
@@ -101,6 +163,7 @@ static void bd71805_irq_enable(struct irq_data *data)
 	struct bd71805 *bd71805 = irq_data_get_irq_chip_data(data);
 
 	bd71805->irq_mask |= ( 1 << irq_to_bd71805_irq(bd71805, data->irq));
+	// printk("~~~t~~~ irq_enable %d\n", irq_to_bd71805_irq(bd71805, data->irq));
 }
 
 static void bd71805_irq_disable(struct irq_data *data)

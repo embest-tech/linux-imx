@@ -29,6 +29,10 @@
 #define BAT_NAME		"bd71805_bat"
 #define BD71805_BATTERY_FULL	100
 
+#define BY_BAT_VOLT		0
+#define BY_VBATLOAD_REG		1
+#define INIT_COULOMB		BY_VBATLOAD_REG
+
 
 #define A10s_mAh(s)		((s) * 1000 / 360)
 #define mAh_A10s(m)		((m) * 360 / 1000)
@@ -223,7 +227,9 @@ static int bd71805_reg_write32(struct bd71805 *mfd, int reg, unsigned val) {
 	}
 	return 0;
 }
+#endif
 
+#if INIT_COULOMB == BY_VBATLOAD_REG
 /** @brief get initial battery voltage and current
  * @param pwr power device
  * @return 0
@@ -231,7 +237,6 @@ static int bd71805_reg_write32(struct bd71805 *mfd, int reg, unsigned val) {
 static int bd71805_get_init_bat_stat(struct bd71805_power *pwr) {
 	struct bd71805 *mfd = pwr->mfd;
 	int vcell;
-	//int curr;
 
 	vcell = bd71805_reg_read16(mfd, BD71805_REG_VM_VBATLOAD_PRE) * 1000;
 	dev_info(pwr->dev, "VM_VBATLOAD_PRE = %d\n", vcell);
@@ -377,6 +382,7 @@ static int bd71805_charge_status(struct bd71805_power *pwr)
 		pwr->rpt_status = POWER_SUPPLY_STATUS_NOT_CHARGING;
 		pwr->bat_health = POWER_SUPPLY_HEALTH_OVERHEAT;
 		break;
+	case 0x30:
 	case 0x40:
 		ret = 0;
 		pwr->rpt_status = POWER_SUPPLY_STATUS_DISCHARGING;
@@ -409,6 +415,7 @@ static int bd71805_charge_status(struct bd71805_power *pwr)
 	return ret;
 }
 
+#if INIT_COULOMB == BY_BAT_VOLT
 static int bd71805_calib_voltage(struct bd71805_power* pwr, int* ocv) {
 	int r, curr, volt;
 
@@ -424,6 +431,7 @@ static int bd71805_calib_voltage(struct bd71805_power* pwr, int* ocv) {
 
 	return 0;
 }
+#endif
 
 /** @brief set initial coulomb counter value from battery voltage
  * @param pwr power device
@@ -433,13 +441,13 @@ static int calibration_coulomb_counter(struct bd71805_power* pwr) {
 	u32 bcap;
 	int soc, ocv;
 
-#if 0
+#if INIT_COULOMB == BY_VBATLOAD_REG
 	/* Get init OCV by HW */
 	bd71805_get_init_bat_stat(pwr);
 
 	ocv = (pwr->hw_ocv1 >= pwr->hw_ocv2)? pwr->hw_ocv1: pwr->hw_ocv2;
 	dev_info(pwr->dev, "ocv %d\n", ocv);
-#else
+#elif INIT_COULOMB == BY_BAT_VOLT
 	bd71805_calib_voltage(pwr, &ocv);
 #endif
 
@@ -452,7 +460,7 @@ static int calibration_coulomb_counter(struct bd71805_power* pwr) {
 	bd71805_reg_write16(pwr->mfd, BD71805_REG_CC_CCNTD_3, ((bcap + bcap / 200) & 0x1FFFUL));
 
 	pwr->coulomb_cnt = bd71805_reg_read32(pwr->mfd, BD71805_REG_CC_CCNTD_3) & 0x1FFFFFFFUL;
-	dev_info(pwr->dev, "CC_CCNTD = %d\n", pwr->coulomb_cnt);
+	dev_info(pwr->dev, "%s() CC_CCNTD = %d\n", __func__, pwr->coulomb_cnt);
 
 	/* Start canceling offset of the DS ADC. This needs 1 second at least */
 	bd71805_set_bits(pwr->mfd, BD71805_REG_CC_CTRL, CCCALIB);
@@ -513,11 +521,17 @@ static int bd71805_get_online(struct bd71805_power* pwr) {
 #define TS_THRESHOLD_VOLT	0xD9
 	r = bd71805_reg_read(pwr->mfd, BD71805_REG_VM_VTH);
 	pwr->bat_online = (r > TS_THRESHOLD_VOLT);
-#else
+#endif
+#if 0
 	r = bd71805_reg_read(pwr->mfd, BD71805_REG_BAT_STAT);
 	if (r >= 0 && (r & BAT_DET_DONE)) {
 		pwr->bat_online = (r & BAT_DET) != 0;
 	}
+#endif
+#if 1
+#define BAT_OPEN	0x7
+	r = bd71805_reg_read(pwr->mfd, BD71805_REG_BAT_TEMP);
+	pwr->bat_online = (r != BAT_OPEN);
 #endif	
 	r = bd71805_reg_read(pwr->mfd, BD71805_REG_VBUS_STAT);
 	if (r >= 0) {
@@ -535,7 +549,7 @@ static int bd71805_init_hardware(struct bd71805_power *pwr) {
 	struct bd71805 *mfd = pwr->mfd;
 	int r;
 
-	r = bd71805_reg_write(mfd, BD71805_REG_DCIN_CLPS, 0x00);
+	r = bd71805_reg_write(mfd, BD71805_REG_DCIN_CLPS, 0x36);
 
 #define TEST_SEQ_00		0x00
 #define TEST_SEQ_01		0x76
@@ -595,7 +609,7 @@ static int bd71805_init_hardware(struct bd71805_power *pwr) {
 	}
 
 	pwr->coulomb_cnt = bd71805_reg_read32(mfd, BD71805_REG_CC_CCNTD_3) & 0x1FFFFFFFUL;
-	dev_info(pwr->dev, "CC_CCNTD = %d\n", pwr->coulomb_cnt);
+	dev_info(pwr->dev, "%s() CC_CCNTD = %d\n", __func__, pwr->coulomb_cnt);
 
 	pwr->curr = 0;
 	pwr->curr_sar = 0;
@@ -654,6 +668,38 @@ static void bd_work_callback(struct work_struct *work)
 	}
 
 	schedule_delayed_work(&pwr->bd_work, msecs_to_jiffies(JITTER_DEFAULT));
+}
+
+/**@brief bd71805 power interrupt
+ * @param irq system irq
+ * @param pwrsys bd71805 power device of system
+ * @retval IRQ_HANDLED success
+ * @retval IRQ_NONE error
+ */
+static irqreturn_t bd71805_power_interrupt(int irq, void *pwrsys)
+{
+	struct device *dev = pwrsys;
+	struct bd71805 *mfd = dev_get_drvdata(dev->parent);
+	// struct bd71805_power *pwr = dev_get_drvdata(dev);
+	int reg, r;
+
+	reg = bd71805_reg_read(mfd, BD71805_REG_INT_STAT_03);
+	if (reg < 0)
+		return IRQ_NONE;
+
+	// printk("INT_STAT_03 = 0x%.2X\n", reg);
+
+	r = bd71805_reg_write(mfd, BD71805_REG_INT_STAT_03, reg);
+	if (r)
+		return IRQ_NONE;
+
+	if (reg & DCIN_MON_DET) {
+		printk("\n~~~DCIN removed\n");
+	} else if (reg & DCIN_MON_RES) {
+		printk("\n~~~DCIN inserted\n");
+	}
+
+	return IRQ_HANDLED;
 }
 
 /** @brief get property of power supply ac
@@ -932,7 +978,7 @@ static int __init bd71805_power_probe(struct platform_device *pdev)
 {
 	struct bd71805 *bd71805 = dev_get_drvdata(pdev->dev.parent);
 	struct bd71805_power *pwr;
-	int ret;
+	int irq, ret;
 
 	pwr = kzalloc(sizeof(*pwr), GFP_KERNEL);
 	if (pwr == NULL)
@@ -974,6 +1020,22 @@ static int __init bd71805_power_probe(struct platform_device *pdev)
 	if (ret) {
 		dev_err(&pdev->dev, "failed to register ac: %d\n", ret);
 		goto fail_register_ac;
+	}
+
+	irq  = platform_get_irq(pdev, 0);
+#ifdef __BD71805_REGMAP_H__
+	irq += bd71805->irq_base;
+#endif
+	if (irq <= 0) {
+		dev_warn(&pdev->dev, "platform irq error # %d\n", irq);
+		return -ENXIO;
+	}
+
+	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
+		bd71805_power_interrupt, IRQF_TRIGGER_LOW | IRQF_EARLY_RESUME,
+		dev_name(&pdev->dev), &pdev->dev);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "IRQ %d is not free.\n", irq);
 	}
 
 	ret = sysfs_create_group(&pwr->bat.dev->kobj, &bd71805_sysfs_attr_group);
