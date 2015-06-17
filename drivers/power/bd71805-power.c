@@ -694,9 +694,9 @@ static irqreturn_t bd71805_power_interrupt(int irq, void *pwrsys)
 		return IRQ_NONE;
 
 	if (reg & DCIN_MON_DET) {
-		printk("\n~~~DCIN removed\n");
+		// printk("\n~~~DCIN removed\n");
 	} else if (reg & DCIN_MON_RES) {
-		printk("\n~~~DCIN inserted\n");
+		// printk("\n~~~DCIN inserted\n");
 	}
 
 	return IRQ_HANDLED;
