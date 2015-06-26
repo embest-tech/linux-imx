@@ -1023,6 +1023,9 @@ static int __init bd71805_power_probe(struct platform_device *pdev)
 	}
 
 	irq  = platform_get_irq(pdev, 0);
+#ifdef __BD71805_REGMAP_H__
+	irq += bd71805->irq_base;
+#endif
 	if (irq <= 0) {
 		dev_warn(&pdev->dev, "platform irq error # %d\n", irq);
 		return -ENXIO;
