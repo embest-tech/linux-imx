@@ -18,6 +18,18 @@ struct file_operations;
 struct vfsmount;
 struct dentry;
 struct path;
+
+struct fd {
+	struct file *file;
+	int need_put;
+};
+
+static inline void fdput(struct fd fd)
+{
+	if (fd.need_put)
+		fput(fd.file);
+}
+
 extern struct file *alloc_file(struct path *, fmode_t mode,
 	const struct file_operations *fop);
 
@@ -39,5 +51,19 @@ extern int get_unused_fd(void);
 extern void put_unused_fd(unsigned int fd);
 
 extern void fd_install(unsigned int fd, struct file *file);
+
+static inline struct fd fdget(unsigned int fd)
+{
+	int b;
+	struct file *f = fget_light(fd, &b);
+	return (struct fd){f,b};
+}
+
+static inline struct fd fdget_raw(unsigned int fd)
+{
+	int b;
+	struct file *f = fget_raw_light(fd, &b);
+	return (struct fd){f,b};
+}
 
 #endif /* __LINUX_FILE_H */
