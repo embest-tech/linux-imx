@@ -21,6 +21,7 @@
 
 #define JITTER_DEFAULT		3000		/* hope 3s is enough */
 #define JITTER_REPORT_CAP	10000		/* 10 seconds */
+#define CALIB_CURRENT_A2A3	0xCE9E
 #define BD71805_BATTERY_CAP	mAh_A10s(battery_capacity)
 #define MAX_VOLTAGE		ocv_table[0]
 #define MIN_VOLTAGE		ocv_table[ARRAY_SIZE(ocv_table) - 1]
@@ -99,7 +100,7 @@ struct bd71805_power {
 	struct power_supply bat;		/**< battery power */
 	struct delayed_work bd_work;		/**< delayed work for timed work */
 
-	int    reg_index;			/**< register address saved for sysfs */
+	int	reg_index;			/**< register address saved for sysfs */
 
 	int    vbus_status;			/**< last vbus status */
 	int    charge_status;			/**< last charge status */
@@ -119,7 +120,13 @@ struct bd71805_power {
 	int	temp;				/**< battery tempature */
 	u32	coulomb_cnt;			/**< Coulomb Counter */
 	int	state_machine;			/**< initial-procedure state machine */
+	volatile int calib_current;		/**< calibration current */
 };
+
+
+#define CALIB_NORM			0
+#define CALIB_START			1
+#define CALIB_GO			2
 
 enum {
 	STAT_POWER_ON,
@@ -579,6 +586,7 @@ static int bd71805_init_hardware(struct bd71805_power *pwr) {
 		bd71805_reg_write(mfd, BD71805_REG_TEST_MODE, TEST_SEQ_02);
 		bd71805_reg_write(mfd, BD71805_REG_TEST_MODE, TEST_SEQ_03);
 		bd71805_reg_write(mfd, BD71805_REG_VSYS_MAX, r | 0x01);
+		bd71805_reg_write16(pwr->mfd, 0xA2, CALIB_CURRENT_A2A3);
 		bd71805_reg_write(mfd, BD71805_REG_TEST_MODE, TEST_SEQ_00);
 
 		/* Stop Coulomb Counter */
@@ -667,7 +675,11 @@ static void bd_work_callback(struct work_struct *work)
 		cap_counter = 0;
 	}
 
-	schedule_delayed_work(&pwr->bd_work, msecs_to_jiffies(JITTER_DEFAULT));
+	if (pwr->calib_current == CALIB_NORM) {
+		schedule_delayed_work(&pwr->bd_work, msecs_to_jiffies(JITTER_DEFAULT));
+	} else if (pwr->calib_current == CALIB_START) {
+		pwr->calib_current = CALIB_GO;
+	}
 }
 
 /**@brief bd71805 power interrupt
@@ -951,12 +963,315 @@ static ssize_t bd71805_sysfs_show_registers(struct device *dev,
 static DEVICE_ATTR(registers, S_IWUSR | S_IRUGO,
 		bd71805_sysfs_show_registers, bd71805_sysfs_set_registers);
 
+static int first_offset(struct bd71805_power *pwr)
+{
+	unsigned char ra2, ra3, ra6, ra7;
+	unsigned char ra2_temp;
+	struct bd71805 *mfd = pwr->mfd;
+
+	bd71805_reg_write(mfd, BD71805_REG_TEST_MODE, TEST_SEQ_01);
+	bd71805_reg_write(mfd, BD71805_REG_TEST_MODE, TEST_SEQ_02);
+	bd71805_reg_write(mfd, BD71805_REG_TEST_MODE, TEST_SEQ_03);
+
+
+	ra2 = bd71805_reg_read(mfd, 0xA2);	// I want to know initial A2 & A3.
+	ra3 = bd71805_reg_read(mfd, 0xA3);	// I want to know initial A2 & A3.
+	ra6 = bd71805_reg_read(mfd, 0xA6);
+	ra7 = bd71805_reg_read(mfd, 0xA7);
+
+	bd71805_reg_write(mfd, 0xA2, 0x00);
+	bd71805_reg_write(mfd, 0xA3, 0x00);
+
+	dev_info(pwr->dev, "TEST[A2] = 0x%.2X\n", ra2);
+	dev_info(pwr->dev, "TEST[A3] = 0x%.2X\n", ra3);
+	dev_info(pwr->dev, "TEST[A6] = 0x%.2X\n", ra6);
+	dev_info(pwr->dev, "TEST[A7] = 0x%.2X\n", ra7);
+
+	//-------------- First Step -------------------
+	dev_info(pwr->dev, "Frist Step begginning \n");
+
+	// delay some time , Make a state of IBAT=0mA
+	// mdelay(1000 * 10);
+
+	ra2_temp = ra2;
+
+	if (ra7 != 0) {
+		//if 0<0xA7<20 decrease the Test register 0xA2[7:3] until 0xA7 becomes 0x00.
+		if ((ra7 > 0) && (ra7 < 20)) {
+			do {
+				ra2 = bd71805_reg_read(mfd, 0xA2);
+				ra2_temp = ra2 >> 3;
+				ra2_temp -= 1;
+				ra2_temp <<= 3;
+				bd71805_reg_write(mfd, 0xA2, ra2_temp);
+				dev_info(pwr->dev, "TEST[A2] = 0x%.2X\n", ra2_temp);
+
+				ra7 = bd71805_reg_read(mfd, 0xA7);
+				dev_info(pwr->dev, "TEST[A7] = 0x%.2X\n", ra7);
+				mdelay(1000);	// 1sec?
+			} while (ra7);
+
+			dev_info(pwr->dev, "A7 becomes 0 . \n");
+
+		}		// end if((ra7 > 0)&&(ra7 < 20)) 
+		else if ((ra7 > 0xDF) && (ra7 < 0xFF))
+			//if DF<0xA7<FF increase the Test register 0xA2[7:3] until 0xA7 becomes 0x00.
+		{
+			do {
+				ra2 = bd71805_reg_read(mfd, 0xA2);
+				ra2_temp = ra2 >> 3;
+				ra2_temp += 1;
+				ra2_temp <<= 3;
+
+				bd71805_reg_write(mfd, 0xA2, ra2_temp);
+				dev_info(pwr->dev, "TEST[A2] = 0x%.2X\n", ra2_temp);
+
+				ra7 = bd71805_reg_read(mfd, 0xA7);
+				dev_info(pwr->dev, "TEST[A7] = 0x%.2X\n", ra7);
+				mdelay(1000);	// 1sec?                           
+			} while (ra7);
+
+			dev_info(pwr->dev, "A7 becomes 0 . \n");
+		}
+	}
+
+	// please use "ra2_temp" at step2.
+	return ra2_temp;
+}
+
+static int second_step(struct bd71805_power *pwr, u8 ra2_temp)
+{
+	u16 ra6, ra7;
+	u8 aft_ra2, aft_ra3;
+	u8 r79, r7a;
+	unsigned int LNRDSA_FUSE;
+	long ADC_SIGN;
+	long DSADGAIN1_INI;
+	struct bd71805 *mfd = pwr->mfd;
+
+	//-------------- Second Step -------------------
+	dev_info(pwr->dev, "Second Step begginning \n");
+
+	// need to change boad setting ( input 1A tio 10mohm)
+	// delay some time , Make a state of IBAT=1000mA
+	// mdelay(1000 * 10);
+
+// rough adjust
+	dev_info(pwr->dev, "ra2_temp = 0x%.2X\n", ra2_temp);
+
+	ra6 = bd71805_reg_read(mfd, 0xA6);
+	ra7 = bd71805_reg_read(mfd, 0xA7);
+	ra6 <<= 8;
+	ra6 |= ra7;		// [0xA6 0xA7]
+	dev_info(pwr->dev, "TEST[A6,A7] = 0x%.4X\n", ra6);
+
+	bd71805_reg_write(mfd, 0xA2, ra2_temp);	// this value from step1
+	bd71805_reg_write(mfd, 0xA3, 0x00);
+
+	bd71805_reg_write(mfd, BD71805_REG_TEST_MODE, TEST_SEQ_00);
+
+	r79 = bd71805_reg_read(mfd, 0x79);
+	r7a = bd71805_reg_read(mfd, 0x7A);
+
+	ADC_SIGN = r79 >> 7;
+	ADC_SIGN = 1 - (2 * ADC_SIGN);
+	DSADGAIN1_INI = r79 << 8;
+	DSADGAIN1_INI = DSADGAIN1_INI + r7a;
+	DSADGAIN1_INI = DSADGAIN1_INI & 0x7FFF;
+	DSADGAIN1_INI = DSADGAIN1_INI * ADC_SIGN; //  unit 0.001
+
+	// unit 0.000001
+	DSADGAIN1_INI *= 1000;
+	{
+	if (DSADGAIN1_INI > 1000001) {
+		DSADGAIN1_INI = 2048000000UL - (DSADGAIN1_INI - 1000000) * 8187;
+	} else if (DSADGAIN1_INI < 999999) {
+		DSADGAIN1_INI = -(DSADGAIN1_INI - 1000000) * 8187;
+	} else {
+		DSADGAIN1_INI = 0;
+	}
+	}
+
+	LNRDSA_FUSE = (int) DSADGAIN1_INI / 1000000;
+
+	dev_info(pwr->dev, "LNRDSA_FUSE = 0x%.8X\n", LNRDSA_FUSE);
+
+	aft_ra2 = (LNRDSA_FUSE >> 8) & 255;
+	aft_ra3 = (LNRDSA_FUSE) & 255;
+
+	aft_ra2 = aft_ra2 + ra2_temp;
+
+	bd71805_reg_write(mfd, BD71805_REG_TEST_MODE, TEST_SEQ_01);
+	bd71805_reg_write(mfd, BD71805_REG_TEST_MODE, TEST_SEQ_02);
+	bd71805_reg_write(mfd, BD71805_REG_TEST_MODE, TEST_SEQ_03);
+
+	bd71805_reg_write(mfd, 0xA2, aft_ra2);
+	bd71805_reg_write(mfd, 0xA3, aft_ra3);
+
+	return 0;
+}
+
+static int third_step(struct bd71805_power *pwr, unsigned thr) {
+	u16 ra2_a3, ra6, ra7;
+	u8 ra2, ra3;
+	u8 aft_ra2, aft_ra3;
+	struct bd71805 *mfd = pwr->mfd;
+
+// fine adjust
+	ra2 = bd71805_reg_read(mfd, 0xA2);	//
+	ra3 = bd71805_reg_read(mfd, 0xA3);	//
+
+	ra6 = bd71805_reg_read(mfd, 0xA6);
+	ra7 = bd71805_reg_read(mfd, 0xA7);
+	ra6 <<= 8;
+	ra6 |= ra7;		// [0xA6 0xA7]
+	dev_info(pwr->dev, "TEST[A6,A7] = 0x%.4X\n", ra6);
+
+
+	if (ra6 > thr) {
+		do {
+			ra2_a3 = bd71805_reg_read(mfd, 0xA2);
+			ra2_a3 <<= 8;
+			ra3 = bd71805_reg_read(mfd, 0xA3);
+			ra2_a3 |= ra3;
+			//ra2_a3 >>= 3; // ? 0xA3[7:3] , or 0xA3[7:0]
+
+			ra2_a3 -= 1;
+			//ra2_a3 <<= 3;
+			ra3 = ra2_a3;
+			bd71805_reg_write(mfd, 0xA3, ra3);
+
+			ra2_a3 >>= 8;
+			ra2 = ra2_a3;
+			bd71805_reg_write(mfd, 0xA2, ra2);
+
+			dev_info(pwr->dev, "TEST[A2] = 0x%.2X , TEST[A3] = 0x%.2X \n", ra2, ra3);
+
+			mdelay(1000);	// 1sec?
+
+			ra6 = bd71805_reg_read(mfd, 0xA6);
+			ra7 = bd71805_reg_read(mfd, 0xA7);
+			ra6 <<= 8;
+			ra6 |= ra7;	// [0xA6 0xA7]
+			dev_info(pwr->dev, "TEST[A6,A7] = 0x%.4X\n", ra6);
+		} while (ra6 > thr);
+	} else if (ra6 < thr) {
+		do {
+			ra2_a3 = bd71805_reg_read(mfd, 0xA2);
+			ra2_a3 <<= 8;
+			ra3 = bd71805_reg_read(mfd, 0xA3);
+			ra2_a3 |= ra3;
+			//ra2_a3 >>= 3; // ? 0xA3[7:3] , or 0xA3[7:0]
+
+			ra2_a3 += 1;
+			//ra2_a3 <<= 3;
+			ra3 = ra2_a3;
+			bd71805_reg_write(mfd, 0xA3, ra3);
+
+			ra2_a3 >>= 8;
+			ra2 = ra2_a3;
+			bd71805_reg_write(mfd, 0xA2, ra2);
+
+			dev_info(pwr->dev, "TEST[A2] = 0x%.2X , TEST[A3] = 0x%.2X \n", ra2, ra3);
+
+			mdelay(1000);	// 1sec?
+
+			ra6 = bd71805_reg_read(mfd, 0xA6);
+			ra7 = bd71805_reg_read(mfd, 0xA7);
+			ra6 <<= 8;
+			ra6 |= ra7;	// [0xA6 0xA7]
+			dev_info(pwr->dev, "TEST[A6,A7] = 0x%.4X\n", ra6);
+
+		} while (ra6 < thr);
+	}
+
+	dev_info(pwr->dev, "[0xA6 0xA7] becomes [0x%.4X] . \n", thr);
+	dev_info(pwr->dev, " Calibation finished ... \n\n");
+
+	aft_ra2 = bd71805_reg_read(mfd, 0xA2);	// 
+	aft_ra3 = bd71805_reg_read(mfd, 0xA3);	// I want to know initial A2 & A3.
+
+	dev_info(pwr->dev, "TEST[A2,A3] = 0x%.2X%.2X\n", aft_ra2, aft_ra3);
+
+	// bd71805_reg_write(mfd, BD71805_REG_TEST_MODE, TEST_SEQ_00);
+
+	return 0;
+}
+
+static ssize_t bd71805_sysfs_set_calibrate(struct device *dev,
+					   struct device_attribute *attr,
+					   const char *buf,
+					   size_t count)
+{
+	struct power_supply *psy = dev_get_drvdata(dev);
+	struct bd71805_power *pwr = container_of(psy, struct bd71805_power, bat);
+	ssize_t ret = 0;
+	unsigned int val, mA;
+	static u8 rA2;
+
+	ret = sscanf(buf, "%d %d", &val, &mA);
+	if (ret < 1) {
+		dev_info(pwr->dev, "error: write a integer string");
+		return count;
+	}
+
+	if (val == 1) {
+		pwr->calib_current = CALIB_START;
+		while (pwr->calib_current != CALIB_GO) {
+			msleep(500);
+		}
+		rA2 = first_offset(pwr);
+	}
+	if (val == 2) {
+		second_step(pwr, rA2);
+	}
+	if (val == 3) {
+		if (ret <= 1) {
+			dev_info(pwr->dev, "error: Fine adjust need a mA argument!");
+		} else {
+		unsigned int ra6_thr;
+
+		ra6_thr = mA * 0xFFFF / 20000;
+		dev_info(pwr->dev, "Fine adjust at %d mA, ra6 threshold %d(0x%X)\n", mA, ra6_thr, ra6_thr);
+		third_step(pwr, ra6_thr);
+		}
+	}
+	if (val == 4) {
+		bd71805_reg_write(pwr->mfd, BD71805_REG_TEST_MODE, TEST_SEQ_00);
+		pwr->calib_current = CALIB_NORM;
+		schedule_delayed_work(&pwr->bd_work, msecs_to_jiffies(0));
+	}
+
+	return count;
+}
+
+static ssize_t bd71805_sysfs_show_calibrate(struct device *dev,
+					    struct device_attribute *attr,
+					    char *buf)
+{
+	// struct power_supply *psy = dev_get_drvdata(dev);
+	// struct bd71805_power *pwr = container_of(psy, struct bd71805_power, bat);
+	ssize_t ret = 0;
+
+	ret = 0;
+	ret += sprintf(buf + ret, "write string value\n"
+		"\t1      0 mA for step one\n"
+		"\t2      1000 mA for rough adjust\n"
+		"\t3 <mA> for fine adjust\n"
+		"\t4      exit current calibration\n");
+	return ret;
+}
+
+static DEVICE_ATTR(calibrate, S_IWUSR | S_IRUGO,
+		bd71805_sysfs_show_calibrate, bd71805_sysfs_set_calibrate);
+
 static struct attribute *bd71805_sysfs_attributes[] = {
 	/*
 	 * TODO: some (appropriate) of these attrs should be switched to
 	 * use pwr supply class props.
 	 */
 	&dev_attr_registers.attr,
+	&dev_attr_calibrate.attr,
 	NULL,
 };
 
@@ -1048,6 +1363,7 @@ static int __init bd71805_power_probe(struct platform_device *pdev)
 	INIT_DELAYED_WORK(&pwr->bd_work, bd_work_callback);
 
 	/* Schedule timer to check current status */
+	pwr->calib_current = CALIB_NORM;
 	schedule_delayed_work(&pwr->bd_work, msecs_to_jiffies(0));
 
 	return 0;
