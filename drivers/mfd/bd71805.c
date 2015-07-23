@@ -34,12 +34,20 @@ static struct resource rtc_resources[] = {
 };
 
 static struct resource power_resources[] = {
+	// irq# 0
 	{
 		.start	= BD71805_IRQ_DCIN_03,
 		.end	= BD71805_IRQ_DCIN_03,
 		.flags	= IORESOURCE_IRQ,
+	},
+	// irq# 1
+	{
+		.start	= BD71805_IRQ_BAT_MON_08,
+		.end	= BD71805_IRQ_BAT_MON_08,
+		.flags	= IORESOURCE_IRQ,
 	}
 };
+
 
 static struct bd71805_gpo_plat_data gpo_plat_data = {
 	.mode = 0x70,
@@ -56,6 +64,7 @@ static struct mfd_cell bd71805_mfd_cells[] = {
 		.num_resources = ARRAY_SIZE(power_resources),
 		.resources = &power_resources[0],
 	},
+	
 	{
 		.name = "bd71805-gpo",
 		.platform_data = &gpo_plat_data,
