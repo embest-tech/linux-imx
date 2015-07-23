@@ -21,10 +21,10 @@
 
 #define JITTER_DEFAULT		3000		/* hope 3s is enough */
 #define JITTER_REPORT_CAP	10000		/* 10 seconds */
-#define CALIB_CURRENT_A2A3	0xCE9E
 #define BD71805_BATTERY_CAP	mAh_A10s(battery_capacity)
 #define MAX_VOLTAGE		ocv_table[0]
-#define MIN_VOLTAGE		ocv_table[ARRAY_SIZE(ocv_table) - 1]
+#define MIN_VOLTAGE		3400000
+#define THR_VOLTAGE		3500000
 #define MAX_CURRENT		1500000		/* uA */
 #define AC_NAME			"bd71805_ac"
 #define BAT_NAME		"bd71805_bat"
@@ -34,35 +34,46 @@
 #define BY_VBATLOAD_REG		1
 #define INIT_COULOMB		BY_VBATLOAD_REG
 
+#define USE_CALIB_CURRENT	1
+#define CALIB_CURRENT_A2A3	0xCE9E
+
+//VBAT Low voltage detection Threshold 
+#define VBAT_LOW_TH		0x00D4 // 0x00D4*16mV = 212*0.016 = 3.392v 
+
+
 
 #define A10s_mAh(s)		((s) * 1000 / 360)
 #define mAh_A10s(m)		((m) * 360 / 1000)
+
+#define MIN_FULL_CHG_TEMP	15	/* 1 degrees C unit */
+#define MAX_FULL_CHG_TEMP	45	/* 1 degrees C unit */
+
 static unsigned int battery_capacity;
 
 
 static int ocv_table[] = {
-	4300000,
 	4200000,
-	4128442,
-	4064928,
-	4007164,
-	3950366,
-	3900408,
-	3850403,
-	3806685,
-	3765556,
-	3712877,
-	3678102,
-	3655723,
-	3638088,
-	3622955,
-	3608886,
-	3590663,
-	3564027,
-	3522301,
-	3473833,
-	3443710,
-	3330334
+	4176940,
+	4126229,
+	4082231,
+	4041213,
+	3997549,
+	3968819,
+	3938827,
+	3911201,
+	3877931,
+	3839736,
+	3817228,
+	3801908,
+	3790304,
+	3781487,
+	3775685,
+	3767288,
+	3750583,
+	3731266,
+	3703010,
+	3686252,
+	3614821
 };	/* unit 1 micro V */
 
 static int soc_table[] = {
@@ -100,7 +111,7 @@ struct bd71805_power {
 	struct power_supply bat;		/**< battery power */
 	struct delayed_work bd_work;		/**< delayed work for timed work */
 
-	int	reg_index;			/**< register address saved for sysfs */
+	int    reg_index;			/**< register address saved for sysfs */
 
 	int    vbus_status;			/**< last vbus status */
 	int    charge_status;			/**< last charge status */
@@ -120,13 +131,18 @@ struct bd71805_power {
 	int	temp;				/**< battery tempature */
 	u32	coulomb_cnt;			/**< Coulomb Counter */
 	int	state_machine;			/**< initial-procedure state machine */
+	#if USE_CALIB_CURRENT
 	volatile int calib_current;		/**< calibration current */
+	#endif
+	u32	soc;				/**< State Of Charge with by load */
+	u32	soc_norm;			/**< State Of Charge without by load */
 };
 
-
+#if USE_CALIB_CURRENT
 #define CALIB_NORM			0
 #define CALIB_START			1
 #define CALIB_GO			2
+#endif
 
 enum {
 	STAT_POWER_ON,
@@ -265,20 +281,16 @@ static int bd71805_get_init_bat_stat(struct bd71805_power *pwr) {
  */
 static int bd71805_get_vbat_curr(struct bd71805_power *pwr, int *vcell, int *curr) {
 	struct bd71805* mfd = pwr->mfd;
-	int tmp_vcell, tmp_curr, tmp_curr2, i;
+	int tmp_vcell, tmp_curr;
 
 	tmp_vcell = 0;
 	tmp_curr = 0;
-	for (i = 0; i < 10; i++) {
-		tmp_vcell += bd71805_reg_read16(mfd, BD71805_REG_VM_VBAT_U);
-		tmp_curr2 = bd71805_reg_read16(mfd, BD71805_REG_VM_IBAT_U);
-		if (bd71805_reg_read(mfd, BD71805_REG_CC_CURCD) & CURDIR_Discharging) {
-			tmp_curr2 = -tmp_curr2;
-		}
-		tmp_curr += tmp_curr2;
+
+	tmp_vcell = bd71805_reg_read16(mfd, BD71805_REG_VM_SMA_VBAT_U);
+	tmp_curr = bd71805_reg_read16(mfd, BD71805_REG_VM_SMA_IBAT_U);
+	if (bd71805_reg_read(mfd, BD71805_REG_CC_CURCD) & CURDIR_Discharging) {
+		tmp_curr = -tmp_curr;
 	}
-	tmp_vcell = tmp_vcell / 10;
-	tmp_curr = tmp_curr / 10;
 
 	*vcell = tmp_vcell * 1000;
 	*curr = tmp_curr * 1000;
@@ -390,6 +402,8 @@ static int bd71805_charge_status(struct bd71805_power *pwr)
 		pwr->bat_health = POWER_SUPPLY_HEALTH_OVERHEAT;
 		break;
 	case 0x30:
+	case 0x31:
+	case 0x32:
 	case 0x40:
 		ret = 0;
 		pwr->rpt_status = POWER_SUPPLY_STATUS_DISCHARGING;
@@ -403,7 +417,8 @@ static int bd71805_charge_status(struct bd71805_power *pwr)
 		break;	
 	}
 
-	if ((pwr->prev_rpt_status != POWER_SUPPLY_STATUS_FULL) && (pwr->rpt_status == POWER_SUPPLY_STATUS_FULL)) {
+	if ((pwr->prev_rpt_status != POWER_SUPPLY_STATUS_FULL) && (pwr->rpt_status == POWER_SUPPLY_STATUS_FULL) && 
+		(pwr->temp >= MIN_FULL_CHG_TEMP) && (pwr->temp <= MAX_FULL_CHG_TEMP)) {
 		/* Stop Coulomb Counter */
 		bd71805_clear_bits(pwr->mfd, BD71805_REG_CC_CTRL, CCNTENB);
 
@@ -517,6 +532,155 @@ static int bd71805_coulomb_count(struct bd71805_power* pwr) {
 	return 0;
 }
 
+/** @brief calculate SOC values
+ * @param pwr power device
+ * @return 0
+ */
+static int bd71805_calc_soc_norm(struct bd71805_power* pwr) {
+	pwr->soc_norm = (pwr->coulomb_cnt >> 16) * 100 /  pwr->full_cap;
+	if (pwr->soc_norm > 100) {
+		pwr->soc_norm = 100;
+		/* Stop Coulomb Counter */
+		bd71805_clear_bits(pwr->mfd, BD71805_REG_CC_CTRL, CCNTENB);
+
+		bd71805_reg_write16(pwr->mfd, BD71805_REG_CC_CCNTD_3, ((pwr->full_cap + pwr->full_cap / 200) & 0x1FFFUL));
+
+		pwr->coulomb_cnt = bd71805_reg_read32(pwr->mfd, BD71805_REG_CC_CCNTD_3) & 0x1FFFFFFFUL;
+		dev_info(pwr->dev, "Limit Coulomb Counter\n");
+		dev_info(pwr->dev, "CC_CCNTD = %d\n", pwr->coulomb_cnt);
+
+		/* Start Coulomb Counter */
+		bd71805_set_bits(pwr->mfd, BD71805_REG_CC_CTRL, CCNTENB);
+	}
+	{
+	static int i;
+	if (i++ % 60 == 0)
+	dev_info(pwr->dev, "%s() pwr->soc_norm = %d\n", __func__, pwr->soc_norm);
+	}
+	return 0;
+}
+
+/** @brief get OCV value by SOC
+ * @param pwr power device
+ * @return 0
+ */
+static int bd71805_get_ocv(struct bd71805_power* pwr, u32 dsoc) {
+	int i = 0;
+	int ocv = 0;
+
+	if (dsoc > soc_table[0]) {
+		ocv = MAX_VOLTAGE;
+	}
+	else if (dsoc == 0) {
+		i = 0;
+		while (i < 21) {
+			if (dsoc == soc_table[i]) {
+				ocv = ocv_table[i];
+				break;
+			}
+			i++;
+		}
+		if (i == 21)
+			ocv = ocv_table[21];
+	}
+	else {
+		i = 0;
+		while (i < 21) {
+			if ((dsoc <= soc_table[i]) && (dsoc > soc_table[i+1])) {
+				ocv = (ocv_table[i] - ocv_table[i+1]) * (dsoc - soc_table[i+1]) / (soc_table[i] - soc_table[i+1]) + ocv_table[i+1];
+				break;
+			}
+			i++;
+		}
+		if (i == 21)
+			ocv = ocv_table[21];
+	}
+	// dev_info(pwr->dev, "%s() ocv = %d\n", __func__, ocv);
+	return ocv;
+}
+
+/** @brief calculate SOC value by load
+ * @param pwr power device
+ * @return OCV
+ */
+static int bd71805_calc_soc(struct bd71805_power* pwr) {
+	int ocv_table_load[22];
+	int lost_cap;
+
+	pwr->soc = pwr->soc_norm;
+
+	switch (pwr->rpt_status) { /* Adjust for 0% between THR_VOLTAGE and MIN_VOLTAGE */
+	case POWER_SUPPLY_STATUS_DISCHARGING:
+	case POWER_SUPPLY_STATUS_NOT_CHARGING:
+		if (pwr->vcell <= THR_VOLTAGE) {
+			int i;
+			int ocv;
+			u32 dsoc = (pwr->coulomb_cnt >> 16) * 1000 /  pwr->full_cap;
+			// dev_info(pwr->dev, "%s() dsoc = %d\n", __func__, dsoc);
+			ocv = bd71805_get_ocv(pwr, dsoc);
+			for (i = 1; i < 22; i++) {
+				ocv_table_load[i] = ocv_table[i] - (ocv - pwr->vcell);
+				if (ocv_table_load[i] <= MIN_VOLTAGE) {
+					// dev_info(pwr->dev, "%s() ocv_table_load[%d] = %d\n",
+					//		__func__, i, ocv_table_load[i]);
+					break;
+				}
+			}
+			if (i < 22) {
+				int j;
+				int dv = (ocv_table_load[i] - ocv_table_load[i-1]) / 5;
+				int mod_coulomb_cnt, mod_full_cap;
+				for (j = 1; j < 5; j++){
+					if ((ocv_table_load[i] + dv * j) > MIN_VOLTAGE) {
+						break;
+					}
+				}
+				lost_cap = ((21 - i) * 5 + (j - 1)) * pwr->full_cap / 100;
+				// dev_info(pwr->dev, "%s() lost_cap = %d\n", __func__, lost_cap);
+				mod_coulomb_cnt = (pwr->coulomb_cnt >> 16) - lost_cap;
+				mod_full_cap = pwr->full_cap - lost_cap;
+				if ((mod_coulomb_cnt > 0) && (mod_full_cap > 0)) {
+					pwr->soc = mod_coulomb_cnt * 100 / mod_full_cap;
+				}
+				else {
+					pwr->soc = 0;
+				}
+				// dev_info(pwr->dev, "%s() pwr->soc(by load) = %d\n", __func__, pwr->soc);
+			}
+		}
+		break;
+	default:
+		break;
+	}
+
+	switch (pwr->rpt_status) {/* Adjust for 0% and 100% */
+	case POWER_SUPPLY_STATUS_DISCHARGING:
+	case POWER_SUPPLY_STATUS_NOT_CHARGING:
+		if (pwr->vcell <= MIN_VOLTAGE) {
+			pwr->soc = 0;
+		}
+		else {
+			if (pwr->soc == 0) {
+				pwr->soc = 1;
+			}
+		}
+		break;
+	case POWER_SUPPLY_STATUS_CHARGING:
+		if (pwr->soc == 100) {
+			pwr->soc = 99;
+		}
+		break;
+	default:
+		break;
+	}
+	{
+	static int i;
+	if (i++ % 60 == 0) 
+	dev_info(pwr->dev, "%s() pwr->soc = %d\n", __func__, pwr->soc);
+	}
+	return 0;
+}
+
 /** @brief get battery and DC online status
  * @param pwr power device
  * @return 0
@@ -586,7 +750,10 @@ static int bd71805_init_hardware(struct bd71805_power *pwr) {
 		bd71805_reg_write(mfd, BD71805_REG_TEST_MODE, TEST_SEQ_02);
 		bd71805_reg_write(mfd, BD71805_REG_TEST_MODE, TEST_SEQ_03);
 		bd71805_reg_write(mfd, BD71805_REG_VSYS_MAX, r | 0x01);
-		bd71805_reg_write16(pwr->mfd, 0xA2, CALIB_CURRENT_A2A3);
+
+		bd71805_reg_write16(mfd, 0xA2, CALIB_CURRENT_A2A3);
+		bd71805_reg_write(mfd, 0x03, 0x1F); //Masked 2.9v ULVO , added by John Zhang
+		
 		bd71805_reg_write(mfd, BD71805_REG_TEST_MODE, TEST_SEQ_00);
 
 		/* Stop Coulomb Counter */
@@ -610,6 +777,9 @@ static int bd71805_init_hardware(struct bd71805_power *pwr) {
 		/* Watch Dog Timer 480 minutes */
 		bd71805_reg_write(mfd, BD71805_REG_CHG_WDT_FST, 0x38);
 
+		/* VBAT Low voltage detection Setting, added by John Zhang*/
+		bd71805_reg_write16(mfd, BD71805_REG_ALM_VBAT_TH_U, VBAT_LOW_TH); 
+
 		pwr->state_machine = STAT_POWER_ON;
 	} else {
 		pwr->full_cap = BD71805_BATTERY_CAP;	// bd71805_reg_read16(pwr->mfd, BD71805_REG_CC_BATCAP_U);
@@ -617,7 +787,10 @@ static int bd71805_init_hardware(struct bd71805_power *pwr) {
 	}
 
 	pwr->coulomb_cnt = bd71805_reg_read32(mfd, BD71805_REG_CC_CCNTD_3) & 0x1FFFFFFFUL;
+	bd71805_calc_soc_norm(pwr);
+	pwr->soc = pwr->soc_norm;
 	dev_info(pwr->dev, "%s() CC_CCNTD = %d\n", __func__, pwr->coulomb_cnt);
+	dev_info(pwr->dev, "%s() pwr->soc = %d\n", __func__, pwr->soc);
 
 	pwr->curr = 0;
 	pwr->curr_sar = 0;
@@ -666,6 +839,8 @@ static void bd_work_callback(struct work_struct *work)
 
 	bd71805_get_vcell(pwr);
 	bd71805_coulomb_count(pwr);
+	bd71805_calc_soc_norm(pwr);
+	bd71805_calc_soc(pwr);
 	bd71805_get_online(pwr);
 	bd71805_charge_status(pwr);
 
@@ -675,11 +850,15 @@ static void bd_work_callback(struct work_struct *work)
 		cap_counter = 0;
 	}
 
+	#if USE_CALIB_CURRENT
 	if (pwr->calib_current == CALIB_NORM) {
+	#endif
 		schedule_delayed_work(&pwr->bd_work, msecs_to_jiffies(JITTER_DEFAULT));
+	#if USE_CALIB_CURRENT
 	} else if (pwr->calib_current == CALIB_START) {
 		pwr->calib_current = CALIB_GO;
 	}
+	#endif
 }
 
 /**@brief bd71805 power interrupt
@@ -713,6 +892,44 @@ static irqreturn_t bd71805_power_interrupt(int irq, void *pwrsys)
 
 	return IRQ_HANDLED;
 }
+
+
+/**@brief bd71805 vbat low voltage detection interrupt
+ * @param irq system irq
+ * @param pwrsys bd71805 power device of system
+ * @retval IRQ_HANDLED success
+ * @retval IRQ_NONE error
+ * added by John Zhang at 2015-07-22
+ */
+static irqreturn_t bd71805_vbat_interrupt(int irq, void *pwrsys)
+{
+	struct device *dev = pwrsys;
+	struct bd71805 *mfd = dev_get_drvdata(dev->parent);
+	// struct bd71805_power *pwr = dev_get_drvdata(dev);
+	int reg, r;
+
+	reg = bd71805_reg_read(mfd, BD71805_REG_INT_STAT_08);
+	if (reg < 0)
+		return IRQ_NONE;
+
+	// printk("INT_STAT_08 = 0x%.2X\n", reg);
+
+	r = bd71805_reg_write(mfd, BD71805_REG_INT_STAT_08, reg);
+	if (r)
+		return IRQ_NONE;
+
+	if (reg & VBAT_MON_DET) {
+		printk("\n~~~ VBAT LOW Detected ... \n");
+		
+	} else if (reg & VBAT_MON_RES) {
+		printk("\n~~~ VBAT LOW Resumed ... \n");
+	}
+
+	return IRQ_HANDLED;
+	
+}
+
+
 
 /** @brief get property of power supply ac
  *  @param psy power supply deivce
@@ -819,10 +1036,7 @@ static int bd71805_battery_get_property(struct power_supply *psy,
 		val->intval = pwr->vcell;
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY:
-		val->intval = (pwr->coulomb_cnt >> 16) * 100 /  pwr->full_cap;
-		if (val->intval > 100) {
-			val->intval = 100;
-		}
+		val->intval = pwr->soc;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_NOW:
 		{
@@ -963,6 +1177,7 @@ static ssize_t bd71805_sysfs_show_registers(struct device *dev,
 static DEVICE_ATTR(registers, S_IWUSR | S_IRUGO,
 		bd71805_sysfs_show_registers, bd71805_sysfs_set_registers);
 
+#if USE_CALIB_CURRENT
 static int first_offset(struct bd71805_power *pwr)
 {
 	unsigned char ra2, ra3, ra6, ra7;
@@ -1264,6 +1479,7 @@ static ssize_t bd71805_sysfs_show_calibrate(struct device *dev,
 
 static DEVICE_ATTR(calibrate, S_IWUSR | S_IRUGO,
 		bd71805_sysfs_show_calibrate, bd71805_sysfs_set_calibrate);
+#endif
 
 static struct attribute *bd71805_sysfs_attributes[] = {
 	/*
@@ -1271,7 +1487,9 @@ static struct attribute *bd71805_sysfs_attributes[] = {
 	 * use pwr supply class props.
 	 */
 	&dev_attr_registers.attr,
+	#if USE_CALIB_CURRENT
 	&dev_attr_calibrate.attr,
+	#endif
 	NULL,
 };
 
@@ -1305,9 +1523,20 @@ static int __init bd71805_power_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, pwr);
 
 	if (battery_capacity <= 0) {
-		battery_capacity = 1500;
+		battery_capacity = 1720;
 	}
 	dev_err(pwr->dev, "battery_capacity = %d\n", battery_capacity);
+
+	/* If the product often power up/down and the power down time is long, the Coulomb Counter may have a drift. */
+	/* If so, it may be better accuracy to enable Coulomb Counter using following commented out code */
+	/* for counting Coulomb when the product is power up(including sleep). */
+	/* The condition  */
+	/* (1) Product often power up and down, the power down time is long and there is no power consumed in power down time. */
+	/* (2) Kernel must call this routin at power up time. */
+	/* (3) Kernel must call this routin at charging time. */
+	/* (4) Must use this code with "Stop Coulomb Counter" code in bd71805_power_remove() function */
+	/* Start Coulomb Counter */
+	/* bd71805_set_bits(pwr->mfd, BD71805_REG_CC_CTRL, CCNTENB); */
 
 	bd71805_init_hardware(pwr);
 
@@ -1337,7 +1566,8 @@ static int __init bd71805_power_probe(struct platform_device *pdev)
 		goto fail_register_ac;
 	}
 
-	irq  = platform_get_irq(pdev, 0);
+	/*Add DC_IN Inserted and Remove ISR */
+	irq  = platform_get_irq(pdev, 0); // get irq number 
 #ifdef __BD71805_REGMAP_H__
 	irq += bd71805->irq_base;
 #endif
@@ -1353,6 +1583,26 @@ static int __init bd71805_power_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "IRQ %d is not free.\n", irq);
 	}
 
+
+	/*add VBAT Low Voltage detection, John Zhang*/
+	irq  = platform_get_irq(pdev, 1);
+#ifdef __BD71805_REGMAP_H__
+	irq += bd71805->irq_base;
+#endif
+	if (irq <= 0) {
+		dev_warn(&pdev->dev, "platform irq error # %d\n", irq);
+		return -ENXIO;
+	}
+
+	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
+		bd71805_vbat_interrupt, IRQF_TRIGGER_LOW | IRQF_EARLY_RESUME,
+		dev_name(&pdev->dev), &pdev->dev);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "IRQ %d is not free.\n", irq);
+	}
+
+
+
 	ret = sysfs_create_group(&pwr->bat.dev->kobj, &bd71805_sysfs_attr_group);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "failed to register sysfs interface\n");
@@ -1363,7 +1613,9 @@ static int __init bd71805_power_probe(struct platform_device *pdev)
 	INIT_DELAYED_WORK(&pwr->bd_work, bd_work_callback);
 
 	/* Schedule timer to check current status */
+	#if USE_CALIB_CURRENT
 	pwr->calib_current = CALIB_NORM;
+	#endif
 	schedule_delayed_work(&pwr->bd_work, msecs_to_jiffies(0));
 
 	return 0;
@@ -1387,6 +1639,16 @@ static int __init bd71805_power_probe(struct platform_device *pdev)
 static int __exit bd71805_power_remove(struct platform_device *pdev)
 {
 	struct bd71805_power *pwr = platform_get_drvdata(pdev);
+
+	/* If the product often power up/down and the power down time is long, the Coulomb Counter may have a drift. */
+	/* If so, it may be better accuracy to disable Coulomb Counter using following commented out code */
+	/* for stopping counting Coulomb when the product is power down(without sleep). */
+	/* The condition  */
+	/* (1) Product often power up and down, the power down time is long and there is no power consumed in power down time. */
+	/* (2) Kernel must call this routin at power down time. */
+	/* (3) Must use this code with "Start Coulomb Counter" code in bd71805_power_probe() function */
+	/* Stop Coulomb Counter */
+	/* bd71805_clear_bits(pwr->mfd, BD71805_REG_CC_CTRL, CCNTENB); */
 
 	sysfs_remove_group(&pwr->bat.dev->kobj, &bd71805_sysfs_attr_group);
 
