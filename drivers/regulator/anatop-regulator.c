@@ -30,6 +30,7 @@
 #include <linux/regmap.h>
 #include <linux/regulator/driver.h>
 #include <linux/regulator/of_regulator.h>
+#include <linux/regulator/machine.h>
 
 #define LDO_RAMP_UP_UNIT_IN_CYCLES      64 /* 64 cycles per step */
 #define LDO_RAMP_UP_FREQ_IN_MHZ         24 /* cycle based on 24M OSC */
@@ -62,6 +63,7 @@ struct anatop_regulator {
 	int min_bit_val;
 	int min_voltage;
 	int max_voltage;
+	unsigned int bypass:1;
 	struct regulator_desc rdesc;
 	struct regulator_init_data *initdata;
 };
@@ -193,6 +195,8 @@ static struct regulator_ops anatop_rops = {
 	.list_voltage = regulator_list_voltage_linear,
 	.map_voltage = regulator_map_voltage_linear,
 	.enable_time = anatop_regmap_enable_time,
+	.get_bypass = regulator_get_bypass_regmap,
+	.set_bypass = regulator_set_bypass_regmap,
 };
 
 static int anatop_regulator_probe(struct platform_device *pdev)
@@ -274,6 +278,11 @@ static int anatop_regulator_probe(struct platform_device *pdev)
 	of_property_read_u32(np, "anatop-delay-bit-shift",
 			     &sreg->delay_bit_shift);
 
+	sreg->bypass = 0;
+	if (of_find_property(np, "anatop-bypass", NULL)) {
+		sreg->bypass = 1;
+	}
+
 	rdesc->n_voltages = (sreg->max_voltage - sreg->min_voltage) / 25000 + 1
 			    + sreg->min_bit_val;
 	rdesc->min_uV = sreg->min_voltage;
@@ -283,11 +292,26 @@ static int anatop_regulator_probe(struct platform_device *pdev)
 	rdesc->vsel_mask = ((1 << sreg->vol_bit_width) - 1) <<
 			   sreg->vol_bit_shift;
 
+	rdesc->bypass_mask = rdesc->vsel_mask;
+	rdesc->bypass_reg = sreg->control_reg;
+
 	config.dev = &pdev->dev;
 	config.init_data = initdata;
 	config.driver_data = sreg;
 	config.of_node = pdev->dev.of_node;
 	config.regmap = sreg->anatop;
+
+	// bypass anatop LDO
+	// tary, 2014-09-18
+	if (sreg->bypass) {
+		u32 val;
+
+		regmap_read(sreg->anatop, rdesc->bypass_reg, &val);
+		val |= rdesc->bypass_mask;
+		regmap_write(sreg->anatop, rdesc->bypass_reg, val);
+
+		initdata->constraints.valid_ops_mask |= REGULATOR_CHANGE_BYPASS;
+	}
 
 	/* register regulator */
 	rdev = regulator_register(rdesc, &config);

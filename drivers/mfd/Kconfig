@@ -1130,6 +1130,15 @@ config MFD_WM8994
 	  core support for the WM8994, in order to use the actual
 	  functionaltiy of the device other drivers must be enabled.
 
+config MFD_BD7181X
+	bool "BD71815/BD71817 Power Management chip"
+	depends on I2C=y
+	select MFD_CORE
+	help
+	  if you say yes here you get support for the BD71815/BD71817
+	  Power Management chips.
+
+
 endmenu
 endif
 
