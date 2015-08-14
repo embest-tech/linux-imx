@@ -528,6 +528,7 @@
 					anatop-min-bit-val = <1>;
 					anatop-min-voltage = <725000>;
 					anatop-max-voltage = <1450000>;
+					anatop-bypass;
 				};
 
 				reg_pu: regulator-vddpu@140 {
@@ -544,6 +545,7 @@
 					anatop-min-bit-val = <1>;
 					anatop-min-voltage = <725000>;
 					anatop-max-voltage = <1450000>;
+					anatop-bypass;
 				};
 
 				reg_soc: regulator-vddsoc@140 {
@@ -561,6 +563,7 @@
 					anatop-min-bit-val = <1>;
 					anatop-min-voltage = <725000>;
 					anatop-max-voltage = <1450000>;
+					anatop-bypass;
 				};
 			};
 

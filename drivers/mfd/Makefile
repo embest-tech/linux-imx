@@ -157,3 +157,4 @@ obj-$(CONFIG_VEXPRESS_CONFIG)	+= vexpress-config.o vexpress-sysreg.o
 obj-$(CONFIG_MFD_RETU)		+= retu-mfd.o
 obj-$(CONFIG_MFD_AS3711)	+= as3711.o
 obj-$(CONFIG_MFD_MXC_HDMI)       += mxc-hdmi-core.o
+obj-$(CONFIG_MFD_BD7181X)	+= bd7181x.o
