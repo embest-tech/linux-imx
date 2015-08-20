@@ -21,7 +21,7 @@
 		fsl,dcm_always_high;
 		fsl,dc_valid;
 		fsl,adc_disable;
-		status = "okay";
+		status = "disabled";
 	};
 
 	regulators {
