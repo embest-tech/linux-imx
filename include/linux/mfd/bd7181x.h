@@ -16,6 +16,23 @@
 
 #include <linux/regmap.h>
 
+// LDO5VSEL_EQ_H
+// define to 1 when LDO5VSEL connect to High
+// define to 0 when LDO5VSEL connect to Low
+#define LDO5VSEL_EQ_H		1
+
+#ifndef LDO5VSEL_EQ_H
+	#error define LDO5VSEL_EQ_H to 1 when connect to High, to 0 when connect to Low
+#else
+	#if LDO5VSEL_EQ_H == 1
+		#define BD7181X_REG_LDO5_VOLT BD7181X_REG_LDO5_VOLT_H
+	#elif LDO5VSEL_EQ_H == 0
+		#define BD7181X_REG_LDO5_VOLT BD7181X_REG_LDO5_VOLT_L
+	#else
+		#error  Define LDO5VSEL_EQ_H only to 0 or 1
+	#endif
+#endif
+
 enum {
 	BD7181X_BUCK1	=	0,
 	BD7181X_BUCK2,
