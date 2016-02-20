@@ -62,6 +62,10 @@ config FB_MXS_SII902X
 	tristate "Si Image SII9022 DVI/HDMI Interface Chip"
 	depends on FB_MXS && I2C
 
+config FB_MXS_IT6263
+	tristate "ITE Tech IT6263"
+	depends on FB_MXS && I2C
+
 config HANNSTAR_CABC
 	tristate "Hannstar CABC function"
 	help
@@ -69,3 +73,5 @@ config HANNSTAR_CABC
 	  function.  This function turns backlight density of a
 	  display panel automatically according to the content
 	  shown on the panel.
+
+
