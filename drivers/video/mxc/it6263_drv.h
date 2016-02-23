@@ -75,11 +75,11 @@ typedef enum _SYS_STATUS { ER_SUCCESS = 0, ER_FAIL, ER_RESERVED
 //Config
 ///////////////////////////////////////////////////////////////////////
 #define SUPPORT_EDID
-#define SUPPORT_HDCP
+//#define SUPPORT_HDCP
 #define SUPPORT_INPUTRGB
 //#define Powerdown
-//#define SUPPORT_LVDS_6_BIT
-#define SUPPORT_LVDS_8_BIT
+#define SUPPORT_LVDS_6_BIT
+//#define SUPPORT_LVDS_8_BIT
 //#define SUPPORT_LVDS_10_BIT
 
 //#define SUPPORT_INPUTYUV444
@@ -88,7 +88,7 @@ typedef enum _SYS_STATUS { ER_SUCCESS = 0, ER_FAIL, ER_RESERVED
 //#define SUPPORT_HBR_AUDIO
 #define USE_SPDIF_CHSTAT
 #define SUPPORT_MAP3
-#define SUPPORT_DISO
+//#define SUPPORT_DISO
 //#define SUPPORT_REGEN_TIMING
 //#define SUPPORT_SPLASH
 #define SUPPORT_AUDIO_MONITOR
