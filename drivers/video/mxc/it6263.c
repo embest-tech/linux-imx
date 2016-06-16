@@ -1957,12 +1957,12 @@ static void
 // SetupAFE(_u8 ucFreqInMHz)
 SetupAFE(VIDEOPCLKLEVEL level)
 {
-	//_u8 uc ;
+	_u8 uc = 0x00;
 	// @emily turn off reg61 before SetupAFE parameters.
 	HDMITX_WriteI2C_Byte(REG_TX_AFE_DRV_CTRL, B_AFE_DRV_RST);	/* 0x10 */
 #ifdef Debug_message
 	// HDMITX_WriteI2C_Byte(REG_TX_AFE_DRV_CTRL,0x3);
-	HDMITX_DEBUG_PRINTF(("SetupAFE()\n"));
+	HDMITX_DEBUG_PRINTF(("SetupAFE(TX_AFE_ISW = 0x%2x)\n", uc));
 #endif
 	//TMDS Clock < 80MHz    TMDS Clock > 80MHz
 	//Reg61    0x03    0x03
@@ -1977,12 +1977,12 @@ SetupAFE(VIDEOPCLKLEVEL level)
 	switch (level) {
 	case PCLK_HIGH:
 		HDMITX_WriteI2C_Byte(REG_TX_AFE_XP_CTRL, 0x88);	// reg62
-		HDMITX_WriteI2C_Byte(REG_TX_AFE_ISW_CTRL, 0x10);	// reg63
+		HDMITX_WriteI2C_Byte(REG_TX_AFE_ISW_CTRL, uc);	// reg63
 		HDMITX_WriteI2C_Byte(REG_TX_AFE_IP_CTRL, 0x84);	// reg64
 		break;
 	default:
 		HDMITX_WriteI2C_Byte(REG_TX_AFE_XP_CTRL, 0x18);	// reg62
-		HDMITX_WriteI2C_Byte(REG_TX_AFE_ISW_CTRL, 0x10);	// reg63
+		HDMITX_WriteI2C_Byte(REG_TX_AFE_ISW_CTRL, uc);	// reg63
 		HDMITX_WriteI2C_Byte(REG_TX_AFE_IP_CTRL, 0x0C);	// reg64
 		break;
 	}
