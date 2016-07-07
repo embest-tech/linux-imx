@@ -786,10 +786,17 @@ static struct i2c_board_info mxc_i2c1_board_info[] __initdata = {
 };
 
 static struct i2c_board_info mxc_i2c2_board_info[] __initdata = {
+#if defined(CONFIG_TOUCHSCREEN_EGALAX)
 	{
 		I2C_BOARD_INFO("egalax_ts", 0x4),
 		.irq = gpio_to_irq(MX6Q_MARSBOARD_CAP_TCH_INT1),
 	},
+#endif
+#if defined(CONFIG_CC_TOUCHSCREEN_GT9271)
+	{
+		I2C_BOARD_INFO("Goodix-TS", 0x14),
+	},
+#endif
 #if defined(CONFIG_VGA_CH7033)
         {
                 I2C_BOARD_INFO("ch7033", 0x76),

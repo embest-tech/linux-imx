@@ -498,14 +498,16 @@ static void __init imx6solo_RIoTboard_init_usb(void)
 
 }
 
-#if 0
+#if 1
 static void mx6solo_RIoTboard_flexcan0_switch(int enable)
 {
+#if 0
 	if (enable) {
 		gpio_set_value(RIoTboard_CAN1_STBY, 1);
 	} else {
 		gpio_set_value(RIoTboard_CAN1_STBY, 0);
 	}
+#endif
 }
 
 static const struct flexcan_platform_data
@@ -1269,6 +1271,7 @@ static void __init mx6_RIoTboard_board_init(void)
 	else
 		imx6q_add_flexcan0(&mx6solo_RIoTboard_flexcan0_pdata);
 	*/
+	imx6q_add_flexcan0(&mx6solo_RIoTboard_flexcan0_pdata);
 
 	clko2 = clk_get(NULL, "clko2_clk");
 	if (IS_ERR(clko2))
