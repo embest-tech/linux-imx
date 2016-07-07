@@ -797,5 +797,6 @@ config TOUCHSCREEN_DA9052
           Dialog Semiconductor DA9052 PMIC
 
 source "drivers/input/touchscreen/generic_ts_rel/Kconfig"
+source "drivers/input/touchscreen/gt9xx/Kconfig"
 
 endif

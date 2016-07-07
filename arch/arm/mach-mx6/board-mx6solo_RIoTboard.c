@@ -447,6 +447,9 @@ static struct i2c_board_info mxc_i2c1_board_info[] __initdata = {
 };
 
 static struct i2c_board_info mxc_i2c2_board_info[] __initdata = {
+        {
+                I2C_BOARD_INFO("Goodix-TS", 0x14),
+        },
 };
 
 static struct i2c_board_info mxc_i2c3_board_info[] __initdata = {
