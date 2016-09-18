@@ -32,6 +32,7 @@ struct pwm_bl_data {
 	int			(*notify)(struct device *,
 					  int brightness);
 	int			(*check_fb)(struct device *, struct fb_info *);
+	int 			call_counter;
 };
 
 static int pwm_backlight_update_status(struct backlight_device *bl)
@@ -56,7 +57,16 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
 		brightness = pb->lth_brightness +
 			(brightness * (pb->period - pb->lth_brightness) / max);
 		pwm_config(pb->pwm, brightness, pb->period);
-		pwm_enable(pb->pwm);
+		/*
+		 * Don't enable backlight before framebuffer display
+		 */
+		if (pb->call_counter > 1)
+			pwm_enable(pb->pwm);
+		/*
+		 * Make sure the counter never overflow
+		 */
+		if (pb->call_counter++ > 256)
+			pb->call_counter = 256;
 	}
 	return 0;
 }
