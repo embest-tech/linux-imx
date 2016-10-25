@@ -15,6 +15,7 @@
 #include <linux/slab.h>
 #include <linux/err.h>
 #include <linux/clk.h>
+#include <linux/delay.h>
 #include <linux/io.h>
 #include <linux/pwm.h>
 #include <linux/fsl_devices.h>
@@ -157,6 +158,7 @@ int pwm_enable(struct pwm_device *pwm)
 
 	reg = readl(pwm->mmio_base + MX3_PWMCR);
 	reg |= MX3_PWMCR_EN;
+	mdelay (30);
 	writel(reg, pwm->mmio_base + MX3_PWMCR);
 
 	if (pwm->enable_pwm_pad)
