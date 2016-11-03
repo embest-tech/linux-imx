@@ -35,11 +35,21 @@ struct pwm_bl_data {
 	void			(*exit)(struct device *);
 };
 
+static struct timer_list timer;
+
+static void timer_func(unsigned long arg)
+{
+	struct pwm_bl_data *pb = bl_get_data((struct backlight_device *)arg);
+
+	pwm_enable(pb->pwm);
+}
+
 static int pwm_backlight_update_status(struct backlight_device *bl)
 {
 	struct pwm_bl_data *pb = bl_get_data(bl);
 	int brightness = bl->props.brightness;
 	int max = bl->props.max_brightness;
+	static int counter = 0;
 
 	if (bl->props.power != FB_BLANK_UNBLANK ||
 	    bl->props.fb_blank != FB_BLANK_UNBLANK ||
@@ -65,7 +75,17 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
 		duty_cycle = pb->lth_brightness +
 		     (duty_cycle * (pb->period - pb->lth_brightness) / max);
 		pwm_config(pb->pwm, duty_cycle, pb->period);
-		pwm_enable(pb->pwm);
+		if (counter == 0) {
+			init_timer(&timer);
+			timer.data = (unsigned long)bl;
+			timer.expires = jiffies + HZ;
+			timer.function = timer_func;
+			add_timer(&timer);
+			counter++;
+		}
+		else {
+			pwm_enable(pb->pwm);
+		}
 	}
 
 	if (pb->notify_after)
@@ -250,7 +270,9 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 	}
 
 	bl->props.brightness = data->dft_brightness;
+#if 0
 	backlight_update_status(bl);
+#endif
 
 	platform_set_drvdata(pdev, bl);
 	return 0;

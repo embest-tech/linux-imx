@@ -910,5 +910,6 @@ config TOUCHSCREEN_TPS6507X
 	  module will be called tps6507x_ts.
 
 source "drivers/input/touchscreen/generic_ts_rel/Kconfig"
+source "drivers/input/touchscreen/gt9xx/Kconfig"
 
 endif
