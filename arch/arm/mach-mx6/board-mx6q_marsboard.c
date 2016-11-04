@@ -743,6 +743,9 @@ static struct i2c_board_info mxc_i2c2_board_info[] __initdata = {
 		I2C_BOARD_INFO("egalax_ts", 0x4),
 		.irq = gpio_to_irq(MX6Q_MARSBOARD_CAP_TCH_INT1),
 	},
+	{
+		I2C_BOARD_INFO("Goodix-TS", 0x14),
+	},
 };
 
 static void imx6q_marsboard_usbotg_vbus(bool on)

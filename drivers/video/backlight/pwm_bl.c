@@ -29,6 +29,7 @@ struct pwm_bl_data {
 	int			(*notify)(struct device *,
 					  int brightness);
 	int			(*check_fb)(struct device *, struct fb_info *);
+	int 		counter;
 };
 
 static int pwm_backlight_update_status(struct backlight_device *bl)
@@ -53,7 +54,11 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
 		brightness = pb->lth_brightness +
 			(brightness * (pb->period - pb->lth_brightness) / max);
 		pwm_config(pb->pwm, brightness, pb->period);
-		pwm_enable(pb->pwm);
+
+		if (pb->counter > 0)
+			pwm_enable(pb->pwm);
+		else 
+			pb->counter++;
 	}
 	return 0;
 }

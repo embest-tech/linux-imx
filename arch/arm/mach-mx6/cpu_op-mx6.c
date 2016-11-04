@@ -361,6 +361,11 @@ void mx6_cpu_op_init(void)
 		if (arm_max_freq == CPU_AT_1_2GHz)
 			arm_max_freq = CPU_AT_1GHz;/*mx6sl max freq is 1Ghz*/
 	}
+	/*
+	 * lower the freq to keep system stable
+	 */
+	arm_max_freq = CPU_AT_800MHz;
+
 	printk(KERN_INFO "arm_max_freq=%s\n", (arm_max_freq == CPU_AT_1_2GHz) ?
 		"1.2GHz" : ((arm_max_freq == CPU_AT_1GHz) ? "1GHz" : "800MHz"));
 	get_cpu_op = mx6_get_cpu_op;
