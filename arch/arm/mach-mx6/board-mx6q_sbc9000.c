@@ -714,7 +714,9 @@ static struct i2c_board_info mxc_i2c2_board_info[] __initdata = {
 	{
 		I2C_BOARD_INFO("ch7033", 0x76),
 	},
-
+	{
+		I2C_BOARD_INFO("Goodix-TS", 0x14),
+	},
 };
 
 static void imx6q_sbc9000_usbotg_vbus(bool on)
