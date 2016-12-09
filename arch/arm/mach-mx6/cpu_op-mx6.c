@@ -16,6 +16,7 @@
 #include <asm/io.h>
 #include <mach/hardware.h>
 #include <mach/mxc_dvfs.h>
+#include <generated/mach-types.h>
 #include "cpu_op-mx6.h"
 
 #define OCOTP_SPEED_BIT_OFFSET (16)
@@ -361,6 +362,14 @@ void mx6_cpu_op_init(void)
 		if (arm_max_freq == CPU_AT_1_2GHz)
 			arm_max_freq = CPU_AT_1GHz;/*mx6sl max freq is 1Ghz*/
 	}
+
+	if (machine_is_mx6q_marsboard()) {
+		/* 
+		 * reduce the max frequency to keep system stable
+	     	 */
+		arm_max_freq = CPU_AT_800MHz;
+	}
+
 	printk(KERN_INFO "arm_max_freq=%s\n", (arm_max_freq == CPU_AT_1_2GHz) ?
 		"1.2GHz" : ((arm_max_freq == CPU_AT_1GHz) ? "1GHz" : "800MHz"));
 	get_cpu_op = mx6_get_cpu_op;
